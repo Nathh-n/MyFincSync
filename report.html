@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Laporan Keuangan</title>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+
+  <style>
+    /* Styling Tambahan Khusus Halaman Report (Clean Theme) */
+    .filter-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      margin-top: 10px;
+    }
+    .filter-card h3 {
+      font-size: 14px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .filter-card select {
+      flex: 1;
+      padding: 10px 15px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #f8fafc;
+      color: var(--text-main);
+      font-size: 14px;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+    .filter-card select:focus {
+      border-color: var(--primary);
+    }
+    
+    /* Summary Grid untuk Report */
+    .report-summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 15px;
+    }
+    .summary-box {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+    .summary-box h4 { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; font-weight: 500; }
+    .summary-box p { font-size: 16px; font-weight: 700; }
+    
+    .net-box {
+      grid-column: 1 / -1; /* Mengisi penuh lebar (2 kolom) */
+      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+      border: 1px solid var(--border);
+    }
+    .net-box h4 { color: var(--text-main); font-weight: 600; font-size: 13px; }
+    .net-box p { font-size: 24px; color: var(--primary); }
+
+    /* Efek menyala saat minus (disesuaikan untuk light theme) */
+    .warning-glow {
+      border: 1px solid var(--red) !important;
+      background: var(--red-light) !important;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2) !important;
+    }
+    
+    /* Jarak bawah agar tidak tertutup navigasi */
+    .report-content { padding-bottom: 100px; }
+  </style>
+</head>
+<body>
+
+  <div class="mobile-wrapper">
+
+    <header class="top-header" style="padding-bottom: 0;">
+      <div class="user-greeting">
+        <p>Analisis & Rekap</p>
+        <h1>Laporan</h1>
+      </div>
+    </header>
+
+    <div class="report-content">
+      
+      <section class="content-section">
+        <div class="filter-card">
+          <h3><i class="fas fa-calendar-alt text-primary"></i> Periode:</h3>
+          <select id="period-filter">
+            <option value="today">Hari Ini</option>
+            <option value="weekly">Minggu Ini</option>
+            <option value="monthly" selected>Bulan Ini</option>
+            <option value="yearly">Tahun Ini</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="content-section">
+        <div class="section-header">
+          <h3>Ringkasan Transaksi</h3>
+        </div>
+        <div class="report-summary-grid">
+          <div class="summary-box">
+            <h4><i class="fas fa-arrow-down text-green"></i> Pemasukan</h4>
+            <p id="period-income" class="text-green">Rp 0</p>
+          </div>
+          <div class="summary-box">
+            <h4><i class="fas fa-arrow-up text-red"></i> Pengeluaran</h4>
+            <p id="period-expense" class="text-red">Rp 0</p>
+          </div>
+          <div class="summary-box net-box" id="period-net-card">
+            <h4>Sisa Uang (Net)</h4>
+            <p id="period-net-balance">Rp 0</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-section">
+        <div class="section-header">
+          <h3>Rincian Transaksi</h3>
+        </div>
+        <div class="transaction-list" id="report-transaction-list">
+          </div>
+      </section>
+
+    </div>
+
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="dashboard.html" class="nav-item">
+      <i class="fas fa-home"></i>
+      <span>Home</span>
+    </a>
+    <a href="report.html" class="nav-item active"> <i class="fas fa-chart-pie"></i>
+      <span>Laporan</span>
+    </a>
+    
+    <div class="nav-item fab-wrapper">
+      <button class="fab" id="main-fab">
+        <i class="fas fa-plus"></i>
+      </button>
+      <div class="fab-menu" id="fab-menu">
+        <a href="income.html" class="fab-action btn-income"><i class="fas fa-arrow-down"></i> Pemasukan</a>
+        <a href="expense.html" class="fab-action btn-expense"><i class="fas fa-arrow-up"></i> Pengeluaran</a>
+      </div>
+    </div>
+
+    <a href="planner.html" class="nav-item">
+      <i class="fas fa-calculator"></i>
+      <span>Planner</span>
+    </a>
+    <a href="goals.html" class="nav-item">
+      <i class="fas fa-bullseye"></i>
+      <span>Target</span>
+    </a>
+  </nav>
+
+  <div class="overlay" id="fab-overlay"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/report.js"></script>
+
+  <script>
+    const fab = document.getElementById('main-fab');
+    const fabMenu = document.getElementById('fab-menu');
+    const overlay = document.getElementById('fab-overlay');
+
+    fab.addEventListener('click', () => {
+      fab.classList.toggle('active');
+      fabMenu.classList.toggle('active');
+      overlay.classList.toggle('active');
+    });
+
+    overlay.addEventListener('click', () => {
+      fab.classList.remove('active');
+      fabMenu.classList.remove('active');
+      overlay.classList.remove('active');
+    });
+  </script>
+</body>
+</html>

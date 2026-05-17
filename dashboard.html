@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Dashboard</title>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+
+  <div class="mobile-wrapper">
+
+    <header class="top-header">
+      <div class="user-greeting">
+        <p>Halo, Selamat Datang!</p>
+        <h1 id="user-name">Dashboard</h1>
+      </div>
+      <button onclick="logout()" class="btn-logout" title="Logout">
+        <i class="fas fa-sign-out-alt"></i>
+      </button>
+    </header>
+
+    <section class="main-balance-card">
+      <p>Total Saldo (Net)</p>
+      <h2 id="net-balance">Rp 0</h2>
+      
+      <div class="income-expense-row">
+        <div class="badge-card">
+          <div class="icon-box icon-green"><i class="fas fa-arrow-down"></i></div>
+          <div>
+            <p>Pemasukan</p>
+            <h4 id="total-income" class="text-green">Rp 0</h4>
+          </div>
+        </div>
+        <div class="badge-card">
+          <div class="icon-box icon-red"><i class="fas fa-arrow-up"></i></div>
+          <div>
+            <p>Pengeluaran</p>
+            <h4 id="total-expense" class="text-red">Rp 0</h4>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="content-section">
+      <div class="section-header">
+        <h3>Struktur Keuangan</h3>
+      </div>
+      <div class="card chart-card">
+        <div class="chart-container">
+          <canvas id="financeChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="content-section">
+      <div class="section-header">
+        <h3>Riwayat Terakhir</h3>
+        <a href="report.html" class="link-see-all">Lihat Semua</a>
+      </div>
+      <div class="transaction-list" id="transaction-list">
+      </div>
+    </section>
+
+    <section class="content-section">
+      <div class="section-header">
+        <h3>Dompet Saya</h3>
+      </div>
+      <div class="card form-card">
+        <form id="wallet-form" class="inline-form">
+          <input type="text" id="wallet_name" placeholder="Nama Dompet" required>
+          <input type="text" inputmode="numeric" id="wallet_balance" placeholder="Saldo Awal (Rp)" required oninput="formatRupiah(this)">
+          <button type="submit" class="btn-primary"><i class="fas fa-plus"></i></button>
+        </form>
+      </div>
+      <div id="wallet-container" class="wallet-scroll-container">
+      </div>
+    </section>
+
+    <section class="content-section" style="padding-bottom: 100px;">
+      <div class="section-header">
+        <h3>Kategori</h3>
+      </div>
+      <div class="card form-card">
+        <form id="category-form" class="inline-form">
+          <input type="text" id="category_name" placeholder="Nama Kategori" required>
+          <select id="category_type">
+            <option value="income">Pemasukan</option>
+            <option value="expense">Pengeluaran</option>
+          </select>
+          <button type="submit" class="btn-primary"><i class="fas fa-plus"></i></button>
+        </form>
+      </div>
+      <div class="category-grid">
+        <div class="category-column">
+          <h4 class="text-green"><i class="fas fa-circle-arrow-down"></i> Pemasukan</h4>
+          <div id="income-category-container"></div>
+        </div>
+        <div class="category-column">
+          <h4 class="text-red"><i class="fas fa-circle-arrow-up"></i> Pengeluaran</h4>
+          <div id="expense-category-container"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="custom-modal-overlay" id="alert-modal-overlay"></div>
+    <div class="custom-modal" id="alert-modal">
+      <div class="modal-body" style="text-align: center; padding: 10px 0;">
+        <div id="alert-icon" style="font-size: 45px; color: var(--green); margin-bottom: 10px;"><i class="fas fa-check-circle"></i></div>
+        <h3 id="alert-title" style="font-size: 18px; color: var(--text-main); margin-bottom: 8px;">Berhasil</h3>
+        <p id="alert-message" style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Pesan di sini</p>
+        <button onclick="closeCustomAlert()" class="btn-primary" style="width: 100%; background: var(--primary);">OK Mengerti</button>
+      </div>
+    </div>
+
+    <div class="custom-modal-overlay" id="confirm-modal-overlay"></div>
+    <div class="custom-modal" id="confirm-modal">
+      <div class="modal-body" style="text-align: center; padding: 10px 0;">
+        <div style="font-size: 45px; color: var(--red); margin-bottom: 10px;"><i class="fas fa-exclamation-circle"></i></div>
+        <h3 style="font-size: 18px; color: var(--text-main); margin-bottom: 8px;">Konfirmasi</h3>
+        <p id="confirm-message" style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Apakah Anda yakin?</p>
+        <div style="display: flex; gap: 10px;">
+          <button onclick="closeCustomConfirm(false)" style="flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; background: #f1f5f9; color: var(--text-muted);">Batal</button>
+          <button onclick="closeCustomConfirm(true)" style="flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; background: var(--red); color: white; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);">Ya, Lanjutkan</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="dashboard.html" class="nav-item active">
+      <i class="fas fa-home"></i>
+      <span>Home</span>
+    </a>
+    <a href="report.html" class="nav-item">
+      <i class="fas fa-chart-pie"></i>
+      <span>Laporan</span>
+    </a>
+    
+    <div class="nav-item fab-wrapper">
+      <button class="fab" id="main-fab">
+        <i class="fas fa-plus"></i>
+      </button>
+      <div class="fab-menu" id="fab-menu">
+        <a href="income.html" class="fab-action btn-income"><i class="fas fa-arrow-down"></i> Pemasukan</a>
+        <a href="expense.html" class="fab-action btn-expense"><i class="fas fa-arrow-up"></i> Pengeluaran</a>
+      </div>
+    </div>
+
+    <a href="planner.html" class="nav-item">
+      <i class="fas fa-calculator"></i>
+      <span>Planner</span>
+    </a>
+    <a href="goals.html" class="nav-item">
+      <i class="fas fa-bullseye"></i>
+      <span>Target</span>
+    </a>
+  </nav>
+
+  <div class="overlay" id="fab-overlay"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/dashboard.js"></script> <script src="js/wallet.js"></script>
+  <script src="js/category.js"></script>
+
+  <script>
+    const fab = document.getElementById('main-fab');
+    const fabMenu = document.getElementById('fab-menu');
+    const overlay = document.getElementById('fab-overlay');
+
+    fab.addEventListener('click', () => {
+      fab.classList.toggle('active');
+      fabMenu.classList.toggle('active');
+      overlay.classList.toggle('active');
+    });
+
+    overlay.addEventListener('click', () => {
+      fab.classList.remove('active');
+      fabMenu.classList.remove('active');
+      overlay.classList.remove('active');
+    });
+  </script>
+</body>
+</html>

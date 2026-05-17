@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Login - FinanceKu</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/auth.css">
+</head>
+<body>
+
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      
+      <a href="index.html" class="btn-close-page" title="Kembali"><i class="fas fa-times"></i></a>
+
+      <div class="auth-header">
+        <h1>Login</h1>
+      </div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label>Email Address</label>
+          <div class="input-group">
+            <i class="fas fa-envelope input-icon"></i>
+            <input type="email" id="login_email" class="form-control" placeholder="Masukkan email kamu" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Password</label>
+          <div class="input-group">
+            <i class="fas fa-lock input-icon"></i>
+            <input type="password" id="login_password" class="form-control" placeholder="Masukkan password" required>
+            <button type="button" class="toggle-password" onclick="togglePassword('login_password', this)">
+              <i class="far fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex-between">
+          <label class="remember-me">
+            <input type="checkbox" checked> Ingat Saya
+          </label>
+          <span class="forgot-pass" onclick="showAuthAlert('Info', 'Fitur reset password menyusul ya!', 'success')">Lupa Password?</span>
+        </div>
+
+        <button type="submit" class="btn-primary">
+          Masuk Sekarang <i class="fas fa-arrow-right" style="margin-left: 5px;"></i>
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        Belum punya akun? <a href="register.html">Daftar di sini</a>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="custom-modal-overlay" id="auth-alert-overlay"></div>
+  <div class="custom-modal" id="auth-alert-modal">
+    <div id="auth-alert-icon" style="font-size: 45px; margin-bottom: 10px;"></div>
+    <h3 id="auth-alert-title" style="font-size: 18px; color: var(--text-main); margin-bottom: 8px;">Judul</h3>
+    <p id="auth-alert-message" style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Pesan</p>
+    <button onclick="closeAuthAlert()" class="btn-primary">OK Mengerti</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+
+  <script>
+    function togglePassword(inputId, btnElement) {
+      const input = document.getElementById(inputId);
+      const icon = btnElement.querySelector('i');
+      
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+      }
+    }
+  </script>
+
+</body>
+</html>

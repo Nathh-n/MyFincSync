@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Budget Planner</title>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+
+  <style>
+    .planner-content { padding-bottom: 100px; }
+    .hidden { display: none !important; }
+
+    .carousel-container {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      gap: 15px;
+      padding-bottom: 5px;
+    }
+    .carousel-container::-webkit-scrollbar { display: none; }
+    
+    .carousel-slide {
+      min-width: 100%;
+      scroll-snap-align: start;
+    }
+
+    .target-card {
+      border-radius: 20px;
+      padding: 24px;
+      color: white;
+      text-align: center;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    }
+    .target-card p { font-size: 13px; opacity: 0.9; margin-bottom: 8px; }
+    .target-card h2 { font-size: 32px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 15px; }
+    .target-info {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      backdrop-filter: blur(5px);
+    }
+
+    .monthly-card {
+      background: linear-gradient(135deg, #8b5cf6, #c084fc);
+      box-shadow: 0 10px 20px rgba(139, 92, 246, 0.25);
+    }
+
+    .daily-card {
+      background: linear-gradient(135deg, #f59e0b, #fcd34d);
+      box-shadow: 0 10px 20px rgba(245, 158, 11, 0.25);
+    }
+
+    .slider-dots { display: flex; justify-content: center; gap: 6px; margin-top: 12px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #e2e8f0; transition: 0.3s; }
+    .dot.active { background: var(--primary); width: 16px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+  <div class="mobile-wrapper">
+
+    <header class="top-header" style="padding-bottom: 0;">
+      <div class="user-greeting">
+        <p>Estimasi Pengeluaran</p>
+        <h1>Budget Planner</h1>
+      </div>
+    </header>
+
+    <div class="planner-content">
+      
+      <section class="content-section" style="margin-top: 15px;">
+        <div class="carousel-container" id="target-carousel">
+          
+          <div class="carousel-slide">
+            <div class="target-card monthly-card">
+              <p>Target Pendapatan Minimal Bulanan</p>
+              <h2 id="total-target-monthly">Rp 0</h2>
+              <div class="target-info">
+                <i class="fas fa-info-circle"></i> Geser untuk lihat target harian <i class="fas fa-arrow-right"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="carousel-slide">
+            <div class="target-card daily-card">
+              <p>Target Pendapatan Minimal Harian</p>
+              <h2 id="total-target-daily">Rp 0</h2>
+              <div class="target-info">
+                <i class="fas fa-sun"></i> Uang yg harus terkumpul hari ini
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="slider-dots">
+          <div class="dot active" id="dot-1"></div>
+          <div class="dot" id="dot-2"></div>
+        </div>
+      </section>
+
+      <section class="content-section">
+        <div class="section-header">
+          <h3>Tambah Estimasi</h3>
+        </div>
+        <div class="card form-card">
+          <form id="planner-form" class="inline-form">
+            <input type="text" id="plan_name" placeholder="Nama (Cth: Kuota Internet)" required>
+            
+            <input type="text" inputmode="numeric" id="plan_amount" placeholder="Nominal (Rp)" required oninput="formatRupiah(this)">
+            
+            <select id="plan_frequency" required>
+              <option value="daily">Per Hari</option>
+              <option value="monthly" selected>Per Bulan</option>
+              <option value="custom">Kustom (Per X Hari)</option>
+            </select>
+
+            <input type="number" id="plan_custom_days" class="hidden" placeholder="Berapa hari sekali? (Cth: 3)">
+            
+            <button type="submit" class="btn-primary" style="background: var(--primary); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+              <i class="fas fa-plus"></i> Simpan Estimasi
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <section class="content-section">
+        <div class="section-header">
+          <h3>Rincian Pengeluaran Bulanan</h3>
+        </div>
+        <div id="plan-list" class="transaction-list">
+        </div>
+      </section>
+
+    </div>
+
+    <div class="custom-modal-overlay" id="alert-modal-overlay"></div>
+    <div class="custom-modal" id="alert-modal">
+      <div class="modal-body" style="text-align: center; padding: 10px 0;">
+        <div id="alert-icon" style="font-size: 45px; color: var(--green); margin-bottom: 10px;"><i class="fas fa-check-circle"></i></div>
+        <h3 id="alert-title" style="font-size: 18px; color: var(--text-main); margin-bottom: 8px;">Berhasil</h3>
+        <p id="alert-message" style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Pesan di sini</p>
+        <button onclick="closeCustomAlert()" class="btn-primary" style="width: 100%; background: var(--primary);">OK Mengerti</button>
+      </div>
+    </div>
+
+    <div class="custom-modal-overlay" id="confirm-modal-overlay"></div>
+    <div class="custom-modal" id="confirm-modal">
+      <div class="modal-body" style="text-align: center; padding: 10px 0;">
+        <div style="font-size: 45px; color: var(--red); margin-bottom: 10px;"><i class="fas fa-exclamation-circle"></i></div>
+        <h3 style="font-size: 18px; color: var(--text-main); margin-bottom: 8px;">Konfirmasi</h3>
+        <p id="confirm-message" style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Apakah Anda yakin?</p>
+        <div style="display: flex; gap: 10px;">
+          <button onclick="closeCustomConfirm(false)" style="flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; background: #f1f5f9; color: var(--text-muted);">Batal</button>
+          <button onclick="closeCustomConfirm(true)" style="flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; background: var(--red); color: white; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);">Ya, Lanjutkan</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="dashboard.html" class="nav-item">
+      <i class="fas fa-home"></i>
+      <span>Home</span>
+    </a>
+    <a href="report.html" class="nav-item">
+      <i class="fas fa-chart-pie"></i>
+      <span>Laporan</span>
+    </a>
+    
+    <div class="nav-item fab-wrapper">
+      <button class="fab" id="main-fab">
+        <i class="fas fa-plus"></i>
+      </button>
+      <div class="fab-menu" id="fab-menu">
+        <a href="income.html" class="fab-action btn-income"><i class="fas fa-arrow-down"></i> Pemasukan</a>
+        <a href="expense.html" class="fab-action btn-expense"><i class="fas fa-arrow-up"></i> Pengeluaran</a>
+      </div>
+    </div>
+
+    <a href="planner.html" class="nav-item active">
+      <i class="fas fa-calculator"></i>
+      <span>Planner</span>
+    </a>
+    <a href="goals.html" class="nav-item">
+      <i class="fas fa-bullseye"></i>
+      <span>Target</span>
+    </a>
+  </nav>
+
+  <div class="overlay" id="fab-overlay"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/planner.js"></script>
+
+  <script>
+    const fab = document.getElementById('main-fab');
+    const fabMenu = document.getElementById('fab-menu');
+    const overlay = document.getElementById('fab-overlay');
+
+    fab.addEventListener('click', () => {
+      fab.classList.toggle('active');
+      fabMenu.classList.toggle('active');
+      overlay.classList.toggle('active');
+    });
+
+    overlay.addEventListener('click', () => {
+      fab.classList.remove('active');
+      fabMenu.classList.remove('active');
+      overlay.classList.remove('active');
+    });
+  </script>
+</body>
+</html>

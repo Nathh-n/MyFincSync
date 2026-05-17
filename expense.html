@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Catat Pengeluaran</title>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  
+  <style>
+    .top-header-back { display: flex; align-items: center; gap: 15px; padding: 24px 20px 16px 20px; }
+    .top-header-back a { color: var(--text-main); font-size: 20px; text-decoration: none; }
+    .top-header-back h1 { font-size: 20px; font-weight: 700; color: var(--text-main); }
+    
+    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .form-group label { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+    .form-control { width: 100%; padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; font-size: 14px; outline: none; background: #f8fafc; transition: 0.2s; }
+    .form-control:focus { border-color: var(--red); background: white; box-shadow: 0 0 0 3px var(--red-light); }
+    
+    /* Input nominal warna MERAH khusus pengeluaran */
+    .amount-input {
+      font-size: 32px !important;
+      font-weight: 800;
+      color: var(--red) !important;
+      text-align: center;
+      padding: 20px !important;
+      background: white !important;
+    }
+    .amount-input::placeholder { color: #fecaca; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <div class="mobile-wrapper" style="background: white;">
+
+    <header class="top-header-back">
+      <a href="dashboard.html"><i class="fas fa-arrow-left"></i></a>
+      <h1>Catat Pengeluaran</h1>
+    </header>
+
+    <section class="content-section" style="padding-top: 10px;">
+      <form id="expense-form">
+        
+        <div class="form-group" style="margin-bottom: 25px;">
+          <label style="text-align: center; color: var(--red);">Jumlah Pengeluaran (Rp)</label>
+          <input type="text" inputmode="numeric" id="amount" class="form-control amount-input" placeholder="0" required oninput="formatRupiah(this)">
+        </div>
+
+        <div class="form-group">
+          <label>Judul Transaksi</label>
+          <input type="text" id="title" class="form-control" placeholder="Cth: Makan Siang, Bensin" required>
+        </div>
+
+        <div class="form-group">
+          <label>Tanggal</label>
+          <input type="date" id="transaction_date" class="form-control" required>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label>Pakai Dompet</label>
+            <select id="wallet_id" class="form-control" required><option value="">Pilih Dompet</option></select>
+          </div>
+          <div class="form-group">
+            <label>Kategori</label>
+            <select id="category_id" class="form-control" required><option value="">Pilih Kategori</option></select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Catatan (Opsional)</label>
+          <textarea id="description" class="form-control" placeholder="Tambahkan keterangan tambahan..." rows="3"></textarea>
+        </div>
+
+        <button type="submit" class="btn-primary" style="background: var(--red); width: 100%; padding: 16px; border-radius: 14px; font-size: 16px; margin-top: 15px; box-shadow: 0 8px 16px rgba(239, 68, 68, 0.3);">
+          <i class="fas fa-arrow-up"></i> Simpan Pengeluaran
+        </button>
+
+      </form>
+    </section>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/transaction.js"></script>
+
+  <script>
+    // Set default tanggal hari ini saat form dibuka
+    document.getElementById('transaction_date').valueAsDate = new Date();
+  </script>
+</body>
+</html>
