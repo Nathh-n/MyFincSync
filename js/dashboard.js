@@ -7,44 +7,59 @@ async function loadSummary() {
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) return;
 
-  const { data: transactions, error } = await supabaseClient
+  // 1. AMBIL DATA TRANSAKSI (Hanya untuk badge Pemasukan & Pengeluaran)
+  const { data: transactions, error: txError } = await supabaseClient
     .from('transactions')
     .select('amount, type')
     .eq('user_id', user.id);
 
-  if (error) {
-    console.error("Error fetching transactions:", error.message);
-    return;
-  }
-
   let totalIncome = 0;
   let totalExpense = 0;
 
-  transactions.forEach(trx => {
-    if (trx.type === 'income') {
-      totalIncome += trx.amount;
-    } else if (trx.type === 'expense') {
-      totalExpense += trx.amount;
-    }
-  });
+  if (!txError && transactions) {
+    transactions.forEach(trx => {
+      if (trx.type === 'income') {
+        totalIncome += trx.amount;
+      } else if (trx.type === 'expense') {
+        totalExpense += trx.amount;
+      }
+    });
+  }
 
-  const netBalance = totalIncome - totalExpense;
+  // 2. AMBIL DATA DOMPET (Untuk menghitung Total Uang Real / Total Saldo)
+  const { data: wallets, error: walletError } = await supabaseClient
+    .from('wallets')
+    .select('balance')
+    .eq('user_id', user.id);
 
+  let totalWalletBalance = 0;
+  
+  if (!walletError && wallets) {
+    wallets.forEach(wallet => {
+      // Jumlahkan semua uang yang ada di tiap dompet
+      totalWalletBalance += Number(wallet.balance) || 0;
+    });
+  }
+
+  // 3. RENDER ANGKA KE LAYAR
   const formatRp = (num) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency', currency: 'IDR', minimumFractionDigits: 0
     }).format(num);
   };
 
+  // Render Pemasukan & Pengeluaran
   document.getElementById('total-income').innerText = formatRp(totalIncome);
   document.getElementById('total-expense').innerText = formatRp(totalExpense);
   
+  // Render Uang Real (Total Saldo)
   const netBalanceEl = document.getElementById('net-balance');
   const mainCardEl = document.querySelector('.main-balance-card');
 
-  netBalanceEl.innerText = formatRp(netBalance);
+  netBalanceEl.innerText = formatRp(totalWalletBalance);
 
-  if (netBalance < 0) {
+  // Ubah warna jika entah bagaimana saldo dompet sampai minus (ngutang)
+  if (totalWalletBalance < 0) {
     netBalanceEl.style.color = '#fee2e2';
     netBalanceEl.innerText += ' (MINUS)';
     if(mainCardEl) mainCardEl.style.background = 'linear-gradient(135deg, #ef4444, #f87171)';
@@ -53,6 +68,7 @@ async function loadSummary() {
     if(mainCardEl) mainCardEl.style.background = 'linear-gradient(135deg, var(--primary), #60a5fa)';
   }
 
+  // Render grafik berdasarkan rasio pemasukan vs pengeluaran
   renderFinanceChart(totalIncome, totalExpense);
 }
 
