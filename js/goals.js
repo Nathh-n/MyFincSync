@@ -111,21 +111,87 @@ function renderGoals() {
   });
 }
 
-function addFund(id, currentAmt, targetAmt) {
+// =========================
+// LOGIKA CUSTOM DROPDOWN DOMPET
+// =========================
+const customSelectWrapper = document.getElementById('custom-wallet-select');
+const customSelectTrigger = document.getElementById('custom-select-trigger');
+
+// Buka/Tutup Dropdown saat diklik
+customSelectTrigger.addEventListener('click', function(e) {
+  e.stopPropagation(); // Mencegah dropdown langsung tertutup
+  customSelectWrapper.classList.toggle('open');
+});
+
+// Tutup dropdown jika klik di luar area dropdown
+document.addEventListener('click', function(e) {
+  if (customSelectWrapper && !customSelectWrapper.contains(e.target)) {
+    customSelectWrapper.classList.remove('open');
+  }
+});
+
+async function loadWalletsForNabung() {
+  const { data, error } = await supabaseClient
+    .from('wallets')
+    .select('id, name, balance')
+    .eq('user_id', currentUserId);
+
+  const optionsContainer = document.getElementById('custom-select-options');
+  const hiddenInput = document.getElementById('nabung_wallet_id');
+  const triggerText = document.getElementById('custom-select-text');
+
+  // Reset tampilan bawaan
+  optionsContainer.innerHTML = '';
+  hiddenInput.value = '';
+  hiddenInput.removeAttribute('data-balance');
+  triggerText.innerText = 'Pilih Sumber Dompet';
+
+  if (!error && data) {
+    if (data.length === 0) {
+      optionsContainer.innerHTML = '<div class="custom-option">Tidak ada dompet tersedia</div>';
+      return;
+    }
+
+    data.forEach(wallet => {
+      const formattedBalance = new Intl.NumberFormat('id-ID').format(wallet.balance);
+      const optionEl = document.createElement('div');
+      optionEl.className = 'custom-option';
+      
+      // Isi desain tiap list dompet
+      optionEl.innerHTML = `
+        <span style="font-weight: 600;">${wallet.name}</span>
+        <span style="font-size: 12px; color: var(--text-muted);">Rp ${formattedBalance}</span>
+      `;
+
+      // Jika opsi dipilih
+      optionEl.addEventListener('click', () => {
+        hiddenInput.value = wallet.id;
+        hiddenInput.setAttribute('data-balance', wallet.balance);
+        triggerText.innerText = wallet.name;
+        customSelectWrapper.classList.remove('open');
+      });
+
+      optionsContainer.appendChild(optionEl);
+    });
+  }
+}
+
+async function addFund(id, currentAmt, targetAmt) {
   selectedGoalId = id; 
   tempGoalData = { currentAmt, targetAmt };
   document.getElementById('nabung_amount').value = ''; 
   
+  await loadWalletsForNabung();
+  
   document.getElementById('nabung-modal-overlay').classList.add('active');
   document.getElementById('nabung-modal').classList.add('active');
-  
-  setTimeout(() => document.getElementById('nabung_amount').focus(), 100); 
 }
 
 function closeNabungModal() {
   selectedGoalId = null;
   document.getElementById('nabung-modal-overlay').classList.remove('active');
   document.getElementById('nabung-modal').classList.remove('active');
+  customSelectWrapper.classList.remove('open'); // Tutup juga dropdown jika terbuka
 }
 
 document.getElementById('close-modal-btn').addEventListener('click', closeNabungModal);
@@ -133,6 +199,14 @@ document.getElementById('nabung-modal-overlay').addEventListener('click', closeN
 
 document.getElementById('confirm-nabung-btn').addEventListener('click', async () => {
   if (!selectedGoalId) return;
+
+  const hiddenInput = document.getElementById('nabung_wallet_id');
+  const selectedWalletId = hiddenInput.value;
+  
+  if (!selectedWalletId) {
+    showCustomAlert("Peringatan", "Pilih dompet sumber uang terlebih dahulu!", "error");
+    return;
+  }
 
   const amountStr = document.getElementById('nabung_amount').value.replace(/\./g, '');
   const amount = parseInt(amountStr);
@@ -142,20 +216,51 @@ document.getElementById('confirm-nabung-btn').addEventListener('click', async ()
     return;
   }
 
+  // Cek saldo dengan mengambil atribut yang kita simpan saat milih
+  const currentWalletBalance = parseInt(hiddenInput.getAttribute('data-balance'));
+
+  if (amount > currentWalletBalance) {
+    showCustomAlert("Peringatan", "Saldo dompet tidak mencukupi untuk ditabung!", "error");
+    return;
+  }
+
   let newCurrent = tempGoalData.currentAmt + amount;
   if (newCurrent > tempGoalData.targetAmt) newCurrent = tempGoalData.targetAmt;
 
-  const { error } = await supabaseClient
+  const btn = document.getElementById('confirm-nabung-btn');
+  const originalBtnText = btn.innerHTML;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+  btn.disabled = true;
+
+  // Potong Saldo Dompet
+  const newWalletBalance = currentWalletBalance - amount;
+  const { error: walletError } = await supabaseClient
+    .from('wallets')
+    .update({ balance: newWalletBalance })
+    .eq('id', selectedWalletId);
+
+  if (walletError) {
+    showCustomAlert("Gagal", "Sistem gagal memotong saldo dompet: " + walletError.message, "error");
+    btn.innerHTML = originalBtnText;
+    btn.disabled = false;
+    return;
+  }
+
+  // Tambah Saldo Tabungan
+  const { error: goalError } = await supabaseClient
     .from('savings_goals')
     .update({ current: newCurrent })
     .eq('id', selectedGoalId);
 
-  if (!error) {
-    showCustomAlert("Berhasil", "Tabungan berhasil ditambahkan!", "success");
+  btn.innerHTML = originalBtnText;
+  btn.disabled = false;
+
+  if (!goalError) {
+    showCustomAlert("Berhasil", "Tabungan ditambahkan dan uang telah dipotong dari dompetmu!", "success");
     await initGoals(); 
     closeNabungModal(); 
   } else {
-    showCustomAlert("Gagal", "Gagal menambah tabungan: " + error.message, "error");
+    showCustomAlert("Gagal", "Gagal menambah tabungan: " + goalError.message, "error");
   }
 });
 
