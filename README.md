@@ -1,0 +1,1 @@
+https://myfinsync.netlify.app/
