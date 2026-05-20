@@ -40,21 +40,19 @@ function setupFormSubmit(userId, transactionType) {
     const category_id = document.getElementById('category_id').value;
     const description = document.getElementById('description').value;
 
-    // Ambil saldo dompet saat ini
     const { data: walletData } = await supabaseClient.from('wallets').select('balance').eq('id', wallet_id).single();
     let currentBalance = walletData ? parseInt(walletData.balance) || 0 : 0;
 
-    // FUNGSI INTI PENYIMPANAN
     const executeTransaction = async () => {
       const btn = form.querySelector('button[type="submit"]');
       const originalText = btn.innerHTML;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
       btn.disabled = true;
 
-      // 1. Simpan Transaksi
-      const { error: txError } = await supabaseClient.from('transactions').insert([{
+      // 1. Simpan Transaksi & Minta Data Kembaliannya (.select)
+      const { data: txData, error: txError } = await supabaseClient.from('transactions').insert([{
         user_id: userId, title, amount, type: transactionType, transaction_date, wallet_id, category_id, description
-      }]);
+      }]).select();
 
       if (txError) {
         alert("Gagal menyimpan: " + txError.message);
@@ -63,7 +61,16 @@ function setupFormSubmit(userId, transactionType) {
 
       // 2. Update Saldo Dompet
       let newBalance = transactionType === 'income' ? currentBalance + amount : currentBalance - amount;
-      await supabaseClient.from('wallets').update({ balance: newBalance }).eq('id', wallet_id);
+      const { error: walletError } = await supabaseClient.from('wallets').update({ balance: newBalance }).eq('id', wallet_id);
+
+      // LOGIKA ROLLBACK (PENCEGAH PARTIAL SUCCESS)
+      if (walletError) {
+        // Jika dompet gagal diupdate (koneksi putus), HAPUS transaksi yang baru saja dibuat di Langkah 1
+        await supabaseClient.from('transactions').delete().eq('id', txData[0].id);
+        
+        alert("Koneksi bermasalah saat memproses saldo dompet! Transaksi dibatalkan otomatis agar data tetap sinkron. Silakan coba lagi.");
+        btn.innerHTML = originalText; btn.disabled = false; return;
+      }
 
       window.location.href = 'dashboard.html';
     };
@@ -82,7 +89,7 @@ let confirmCallback = null;
 function showCustomConfirm(message, callback) {
   const modalOverlay = document.getElementById('confirm-modal-overlay');
   if(!modalOverlay) {
-    if(confirm(message.replace(/<br>/g, "\n"))) callback(); // Fallback aman jika pop-up tidak ada (cth: di income)
+    if(confirm(message.replace(/<br>/g, "\n"))) callback(); 
     return;
   }
   document.getElementById('confirm-message').innerHTML = message;

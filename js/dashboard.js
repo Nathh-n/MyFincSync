@@ -9,7 +9,6 @@ async function loadSummary() {
 
   if (transactions) {
     transactions.forEach(trx => {
-      // Hanya menghitung income & expense murni
       if (trx.type === 'income') totalIncome += trx.amount;
       else if (trx.type === 'expense') totalExpense += trx.amount;
     });
@@ -80,10 +79,7 @@ async function loadRecentTransactions() {
     const walletName = trx.wallets ? trx.wallets.name : 'Unknown';
     const walletId = trx.wallets ? trx.wallets.id : '';
 
-    // Sembunyikan tombol batal jika transaksi adalah 'transfer' tabungan
     const undoBtn = trx.type === 'transfer' ? '' : `<button onclick="undoTransaction('${trx.id}', '${walletId}', ${trx.amount}, '${trx.type}')" style="background: none; border: none; color: #ef4444; font-size: 11px; cursor: pointer; font-weight: 600;"><i class="fas fa-undo"></i> Batal</button>`;
-    
-    // Style abu-abu khusus transfer
     const transferStyle = trx.type === 'transfer' ? 'style="color: #64748b;"' : '';
 
     transactionList.innerHTML += `
@@ -104,12 +100,26 @@ async function loadRecentTransactions() {
 }
 
 function undoTransaction(trxId, walletId, amount, type) {
+  // PENCEGAHAN GANDA: Tolak jika tipe transfer lolos ke fungsi ini
+  if (type === 'transfer') {
+    showCustomAlert("Ditolak", "Transaksi tabungan internal tidak dapat dibatalkan dari Dashboard.", "error");
+    return;
+  }
+
   showCustomConfirm("Yakin ingin membatalkan transaksi ini?<br>Uang akan dikembalikan secara otomatis ke dompet.", async () => {
     if (walletId) {
       const { data: wData } = await supabaseClient.from('wallets').select('balance').eq('id', walletId).single();
       if (wData) {
         let currentBalance = parseInt(wData.balance) || 0;
-        let restoredBalance = type === 'expense' ? currentBalance + amount : currentBalance - amount;
+        let restoredBalance = currentBalance;
+
+        // LOGIKA AMAN & SPESIFIK
+        if (type === 'expense') {
+          restoredBalance = currentBalance + amount; // Pengeluaran batal, uang balik
+        } else if (type === 'income') {
+          restoredBalance = currentBalance - amount; // Pemasukan batal, uang ditarik lagi
+        }
+
         await supabaseClient.from('wallets').update({ balance: restoredBalance }).eq('id', walletId);
       }
     }
