@@ -26,7 +26,6 @@ async function initGoals() {
   }
 }
 
-// FORMAT RUPIAH HELPER
 const formatRp = (num) => {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
 };
@@ -35,9 +34,6 @@ function formatRupiah(input) {
   input.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
-// =========================
-// RENDER UI
-// =========================
 function renderGoals() {
   const container = document.getElementById('goals-container');
   container.innerHTML = '';
@@ -104,9 +100,6 @@ function renderGoals() {
   });
 }
 
-// =========================
-// TAMBAH TARGET BARU
-// =========================
 document.getElementById('goal-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const name = document.getElementById('goal_name').value;
@@ -127,20 +120,14 @@ document.getElementById('goal-form').addEventListener('submit', async (e) => {
   btn.innerHTML = originalText; btn.disabled = false;
 });
 
-// =========================
-// SETUP CUSTOM DROPDOWN LOGIC
-// =========================
 function setupCustomDropdown(wrapperId, triggerId, textId, optionsId, inputId, dataList) {
   const wrapper = document.getElementById(wrapperId);
   const trigger = document.getElementById(triggerId);
   const optionsContainer = document.getElementById(optionsId);
   const hiddenInput = document.getElementById(inputId);
 
-  // Bersihkan Listener lama agar tidak dobel
   const newTrigger = trigger.cloneNode(true);
   trigger.parentNode.replaceChild(newTrigger, trigger);
-
-  // KUNCI PERBAIKAN: Ambil elemen text SETELAH trigger di-clone
   const triggerText = document.getElementById(textId);
 
   newTrigger.addEventListener('click', (e) => {
@@ -168,7 +155,7 @@ function setupCustomDropdown(wrapperId, triggerId, textId, optionsId, inputId, d
     optionEl.addEventListener('click', () => {
       hiddenInput.value = wallet.id;
       hiddenInput.setAttribute('data-balance', wallet.balance);
-      triggerText.innerText = wallet.name; // Teks sekarang akan update dengan benar!
+      triggerText.innerText = wallet.name; 
       wrapper.classList.remove('open');
     });
     optionsContainer.appendChild(optionEl);
@@ -180,9 +167,6 @@ async function fetchWallets() {
   return data || [];
 }
 
-// =========================
-// BUKA MODAL AKSI
-// =========================
 async function openActionNominal(id, currentAmt, targetAmt, actionType) {
   currentAction = actionType; selectedGoalId = id; tempGoalData = { currentAmt, targetAmt };
   document.getElementById('nominal_amount').value = '';
@@ -253,9 +237,6 @@ function closeActionModals() {
   document.getElementById('full-action-modal').classList.remove('active');
 }
 
-// =========================
-// PROSES KONFIRMASI MODAL (Dengan Tracking History)
-// =========================
 document.getElementById('confirm-nominal-btn').addEventListener('click', async () => {
   const walletId = document.getElementById('nominal_wallet_id').value;
   const amount = parseInt(document.getElementById('nominal_amount').value.replace(/\./g, ''));
@@ -265,16 +246,13 @@ document.getElementById('confirm-nominal-btn').addEventListener('click', async (
   if (isNaN(amount) || amount <= 0) { showCustomAlert("Peringatan", "Masukkan nominal yang valid!", "error"); return; }
 
   let newGoalCurrent, newWalletBalance;
-  
-  // Dapatkan Nama Target untuk dicatat di History
   const goalObj = goals.find(g => g.id === selectedGoalId);
   const goalName = goalObj ? goalObj.name : 'Target Tabungan';
 
   if (currentAction === 'nabung') {
-    // KUNCI PERBAIKAN: Cek sisa target agar tidak bisa input nominal melebihi sisa
     const sisaTarget = tempGoalData.targetAmt - tempGoalData.currentAmt;
     if (amount > sisaTarget) {
-        showCustomAlert("Peringatan", `Nominal terlalu besar! Maksimal uang yang bisa ditabung untuk target ini adalah Rp ${new Intl.NumberFormat('id-ID').format(sisaTarget)}.`, "error");
+        showCustomAlert("Peringatan", `Nominal terlalu besar! Maksimal uang yang bisa ditabung adalah Rp ${new Intl.NumberFormat('id-ID').format(sisaTarget)}.`, "error");
         return;
     }
     if (amount > currentWalletBalance) { showCustomAlert("Peringatan", "Saldo dompet tidak mencukupi!", "error"); return; }
@@ -290,17 +268,16 @@ document.getElementById('confirm-nominal-btn').addEventListener('click', async (
   const btn = document.getElementById('confirm-nominal-btn');
   const ogText = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...'; btn.disabled = true;
 
-  // 1. Eksekusi Update Dompet & Target
   await supabaseClient.from('wallets').update({ balance: newWalletBalance }).eq('id', walletId);
   await supabaseClient.from('savings_goals').update({ current: newGoalCurrent }).eq('id', selectedGoalId);
 
-  // 2. KUNCI PERBAIKAN: Tracking Transaksi
+  // KUNCI UPDATE: type diubah jadi 'transfer'
   const txDate = new Date().toISOString().split('T')[0];
   await supabaseClient.from('transactions').insert([{
     user_id: currentUserId,
     title: currentAction === 'nabung' ? `Nabung: ${goalName}` : `Tarik Tabungan: ${goalName}`,
     amount: amount,
-    type: currentAction === 'nabung' ? 'expense' : 'income',
+    type: 'transfer', 
     transaction_date: txDate,
     wallet_id: walletId,
     description: 'Sistem Target Tabungan'
@@ -323,18 +300,17 @@ document.getElementById('confirm-full-btn').addEventListener('click', async () =
   const goalObj = goals.find(g => g.id === selectedGoalId);
   const goalName = goalObj ? goalObj.name : 'Target Tabungan';
 
-  // 1. Eksekusi Update Dompet & Hapus Target
   const newWalletBalance = currentWalletBalance + tempGoalData.currentAmt;
   await supabaseClient.from('wallets').update({ balance: newWalletBalance }).eq('id', walletId);
   await supabaseClient.from('savings_goals').delete().eq('id', selectedGoalId);
 
-  // 2. KUNCI PERBAIKAN: Tracking Transaksi
+  // KUNCI UPDATE: type diubah jadi 'transfer'
   const txDate = new Date().toISOString().split('T')[0];
   await supabaseClient.from('transactions').insert([{
     user_id: currentUserId,
     title: currentAction === 'cairkan' ? `Cairkan Target: ${goalName}` : `Refund Target: ${goalName}`,
     amount: tempGoalData.currentAmt,
-    type: 'income',
+    type: 'transfer',
     transaction_date: txDate,
     wallet_id: walletId,
     description: 'Pencairan sistem Target Tabungan'
@@ -345,9 +321,6 @@ document.getElementById('confirm-full-btn').addEventListener('click', async () =
   initGoals();
 });
 
-// =========================
-// SISTEM POP-UP GLOBAL
-// =========================
 function showCustomAlert(title, message, type = 'success') {
   document.getElementById('alert-title').innerText = title; document.getElementById('alert-message').innerText = message;
   const iconEl = document.getElementById('alert-icon');

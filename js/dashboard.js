@@ -9,6 +9,7 @@ async function loadSummary() {
 
   if (transactions) {
     transactions.forEach(trx => {
+      // Hanya menghitung income & expense murni
       if (trx.type === 'income') totalIncome += trx.amount;
       else if (trx.type === 'expense') totalExpense += trx.amount;
     });
@@ -69,11 +70,21 @@ async function loadRecentTransactions() {
   const formatRp = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
 
   transactions.forEach(trx => {
-    const isIncome = trx.type === 'income';
+    let amountColor = '';
+    let amountSign = '';
+    if (trx.type === 'income') { amountColor = 'text-green'; amountSign = '+'; }
+    else if (trx.type === 'expense') { amountColor = 'text-red'; amountSign = '-'; }
+
     const formattedDate = new Date(trx.transaction_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
     const categoryName = trx.categories ? trx.categories.name : 'Sistem';
     const walletName = trx.wallets ? trx.wallets.name : 'Unknown';
     const walletId = trx.wallets ? trx.wallets.id : '';
+
+    // Sembunyikan tombol batal jika transaksi adalah 'transfer' tabungan
+    const undoBtn = trx.type === 'transfer' ? '' : `<button onclick="undoTransaction('${trx.id}', '${walletId}', ${trx.amount}, '${trx.type}')" style="background: none; border: none; color: #ef4444; font-size: 11px; cursor: pointer; font-weight: 600;"><i class="fas fa-undo"></i> Batal</button>`;
+    
+    // Style abu-abu khusus transfer
+    const transferStyle = trx.type === 'transfer' ? 'style="color: #64748b;"' : '';
 
     transactionList.innerHTML += `
       <div class="transaction-item" style="align-items: center;">
@@ -82,41 +93,33 @@ async function loadRecentTransactions() {
           <p>${formattedDate} • ${categoryName} • ${walletName}</p>
         </div>
         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
-          <div class="transaction-amount ${isIncome ? 'text-green' : 'text-red'}">
-            ${isIncome ? '+' : '-'} ${formatRp(trx.amount)}
+          <div class="transaction-amount ${amountColor}" ${transferStyle}>
+            ${amountSign} ${formatRp(trx.amount)}
           </div>
-          <button onclick="undoTransaction('${trx.id}', '${walletId}', ${trx.amount}, '${trx.type}')" style="background: none; border: none; color: #ef4444; font-size: 11px; cursor: pointer; font-weight: 600;"><i class="fas fa-undo"></i> Batal</button>
+          ${undoBtn}
         </div>
       </div>
     `;
   });
 }
 
-// LOGIKA MESIN WAKTU (UNDO)
 function undoTransaction(trxId, walletId, amount, type) {
   showCustomConfirm("Yakin ingin membatalkan transaksi ini?<br>Uang akan dikembalikan secara otomatis ke dompet.", async () => {
-    
-    // 1. Kembalikan Uang ke Dompet (Jika dompetnya masih ada)
     if (walletId) {
       const { data: wData } = await supabaseClient.from('wallets').select('balance').eq('id', walletId).single();
       if (wData) {
         let currentBalance = parseInt(wData.balance) || 0;
-        // Dibalik: Kalau dulu pengeluaran, sekarang uang dikembalikan (+). Kalau dulu pemasukan, uang ditarik (-).
         let restoredBalance = type === 'expense' ? currentBalance + amount : currentBalance - amount;
         await supabaseClient.from('wallets').update({ balance: restoredBalance }).eq('id', walletId);
       }
     }
-
-    // 2. Hapus Transaksi
     await supabaseClient.from('transactions').delete().eq('id', trxId);
-    
     showCustomAlert("Berhasil", "Transaksi dibatalkan. Saldo dompet telah disesuaikan.", "success");
     loadSummary();
     loadRecentTransactions();
   });
 }
 
-// SISTEM POP-UP GLOBAL
 function showCustomAlert(title, message, type = 'success') {
   document.getElementById('alert-title').innerText = title; document.getElementById('alert-message').innerText = message;
   const iconEl = document.getElementById('alert-icon');

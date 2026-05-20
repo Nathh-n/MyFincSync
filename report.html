@@ -9,73 +9,72 @@
   <link rel="stylesheet" href="css/dashboard.css">
 
   <style>
-    /* Styling Tambahan Khusus Halaman Report (Clean Theme) */
+    /* Styling Filter Lebih Compact */
     .filter-card {
       background: var(--card-bg);
-      border-radius: 16px;
-      padding: 16px;
+      border-radius: 12px;
+      padding: 12px 16px;
       box-shadow: var(--shadow-sm);
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 15px;
-      margin-top: 10px;
-    }
-    .filter-card h3 {
-      font-size: 14px;
-      color: var(--text-muted);
-      white-space: nowrap;
-    }
-    .filter-card select {
-      flex: 1;
-      padding: 10px 15px;
+      margin-top: 5px;
       border: 1px solid var(--border);
-      border-radius: 8px;
-      background: #f8fafc;
-      color: var(--text-main);
-      font-size: 14px;
-      font-weight: 600;
-      outline: none;
-      cursor: pointer;
     }
-    .filter-card select:focus {
-      border-color: var(--primary);
+    .filter-card h3 { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
+    .filter-card select {
+      flex: 1; padding: 8px 12px; border: 1px solid var(--border);
+      border-radius: 8px; background: #f8fafc; color: var(--text-main);
+      font-size: 13px; font-weight: 600; outline: none; cursor: pointer;
     }
+    .filter-card select:focus { border-color: var(--primary); }
     
-    /* Summary Grid untuk Report */
+    /* Summary Grid Lebih Compact & Modern */
     .report-summary-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-top: 15px;
+      gap: 10px;
+      margin-top: 10px;
     }
     .summary-box {
       background: var(--card-bg);
       border-radius: 12px;
-      padding: 16px;
+      padding: 12px;
       box-shadow: var(--shadow-sm);
       text-align: center;
       border: 1px solid var(--border);
     }
-    .summary-box h4 { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; font-weight: 500; }
-    .summary-box p { font-size: 16px; font-weight: 700; }
+    .summary-box h4 { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .summary-box p { font-size: 15px; font-weight: 700; }
     
     .net-box {
-      grid-column: 1 / -1; /* Mengisi penuh lebar (2 kolom) */
+      grid-column: 1 / -1; 
       background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-      border: 1px solid var(--border);
+      padding: 14px;
     }
-    .net-box h4 { color: var(--text-main); font-weight: 600; font-size: 13px; }
-    .net-box p { font-size: 24px; color: var(--primary); }
+    .net-box h4 { color: var(--text-main); font-weight: 700; font-size: 12px; }
+    .net-box p { font-size: 20px; color: var(--primary); font-weight: 800; margin-top: 2px;}
 
-    /* Efek menyala saat minus (disesuaikan untuk light theme) */
     .warning-glow {
       border: 1px solid var(--red) !important;
       background: var(--red-light) !important;
-      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2) !important;
     }
+
+    /* Micro Insight Box */
+    .micro-insight {
+      text-align: center; font-size: 12px; font-weight: 600;
+      padding: 10px; border-radius: 8px; margin-top: 10px;
+      display: none; /* Disembunyikan dulu sampai JS memproses data */
+      animation: fadeIn 0.5s ease-in-out;
+    }
+    .insight-positive { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; } 
+    .insight-negative { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+    .insight-neutral { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
     
-    /* Jarak bawah agar tidak tertutup navigasi */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    
+    /* Jarak bawah navigasi */
     .report-content { padding-bottom: 100px; }
   </style>
 </head>
@@ -93,7 +92,7 @@
     <div class="report-content">
       
       <section class="content-section">
-        <div class="filter-card" style="margin-bottom: 5px;">
+        <div class="filter-card">
           <h3><i class="fas fa-calendar-alt text-primary"></i> Periode:</h3>
           <select id="period-filter">
             <option value="today">Hari Ini</option>
@@ -102,7 +101,7 @@
             <option value="yearly">Tahun Ini</option>
           </select>
         </div>
-        <p id="date-range-text" style="font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 8px; font-style: italic; font-weight: 500;"></p>
+        <p id="date-range-text" style="font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 8px; font-style: italic; font-weight: 500;"></p>
       </section>
 
       <section class="content-section">
@@ -123,6 +122,7 @@
             <p id="period-net-balance">Rp 0</p>
           </div>
         </div>
+        <div id="micro-insight-container" class="micro-insight"></div>
       </section>
 
       <section class="content-section">
