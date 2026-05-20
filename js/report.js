@@ -5,7 +5,6 @@ function getDateRange(period) {
   const now = new Date();
   let startDate, endDate;
 
-  // Format ke YYYY-MM-DD sesuai zona waktu lokal
   const formatYYYYMMDD = (date) => {
     const offset = date.getTimezoneOffset();
     const localDate = new Date(date.getTime() - (offset * 60 * 1000));
@@ -19,13 +18,11 @@ function getDateRange(period) {
   } 
   
   if (period === 'weekly') {
-    // Cari hari Senin di minggu ini
     const currentDay = now.getDay(); 
     const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
     const monday = new Date(now);
     monday.setDate(now.getDate() + distanceToMonday);
     
-    // Cari hari Minggu di minggu ini
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
 
@@ -33,20 +30,26 @@ function getDateRange(period) {
   } 
   
   if (period === 'monthly') {
-    // Tanggal 1 bulan ini sampai tanggal terakhir bulan ini
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     return { start: formatYYYYMMDD(firstDay), end: formatYYYYMMDD(lastDay) };
   } 
   
   if (period === 'yearly') {
-    // 1 Januari sampai 31 Desember tahun ini
     const firstDay = new Date(now.getFullYear(), 0, 1);
     const lastDay = new Date(now.getFullYear(), 11, 31);
     return { start: formatYYYYMMDD(firstDay), end: formatYYYYMMDD(lastDay) };
   }
 
   return { start: todayStr, end: todayStr };
+}
+
+// FORMAT BULAN INDONESIA UNTUK DISPLAY RANGE
+function formatIndoDateLong(dateStr) {
+  const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  return `${parseInt(parts[2])} ${months[parseInt(parts[1]) - 1]} ${parts[0]}`;
 }
 
 // ==========================================
@@ -59,7 +62,9 @@ async function loadReport() {
   const period = document.getElementById('period-filter').value;
   const { start, end } = getDateRange(period);
 
-  // Ambil data transaksi di antara start date dan end date
+  // LOGIKA 3: Cetak Rentang Tanggal Riil ke Layar
+  document.getElementById('date-range-text').innerHTML = `<i class="fas fa-eye"></i> Data dari: <b>${formatIndoDateLong(start)}</b> s/d <b>${formatIndoDateLong(end)}</b>`;
+
   const { data: transactions, error } = await supabaseClient
     .from('transactions')
     .select(`
@@ -111,18 +116,25 @@ function renderReportData(transactions) {
       const dateObj = new Date(trx.transaction_date);
       const formattedDate = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
-      const categoryName = trx.categories ? trx.categories.name : 'Uncategorized';
+      let categoryName = trx.categories ? trx.categories.name : 'Sistem';
       const walletName = trx.wallets ? trx.wallets.name : 'Unknown Wallet';
       
-      // Tampilkan deskripsi jika user mengisinya
-      const descHTML = trx.description ? `<p style="font-size:13px; color:#cbd5e1; margin-top:5px; font-style: italic;">"${trx.description}"</p>` : '';
+      // LOGIKA 2: Deteksi Transaksi Sistem Tabungan (Warna & Badge khusus agar tidak dikira jajan beneran)
+      let savingsBadgeHTML = '';
+      const descText = trx.description ? trx.description.toLowerCase() : '';
+      if (descText.includes('tabungan')) {
+         categoryName = "Target Tabungan";
+         savingsBadgeHTML = ` • <span style="background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 6px; font-size: 10px; font-weight: bold;"><i class="fas fa-bullseye"></i> Alokasi Celengan</span>`;
+      }
+      
+      const descHTML = trx.description ? `<p style="font-size:13px; color:#94a3b8; margin-top:5px; font-style: italic;">"${trx.description}"</p>` : '';
 
       const itemHTML = `
         <div class="transaction-item" style="flex-direction: column; align-items: flex-start; gap: 3px;">
           <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
             <div class="transaction-detail">
-              <h4>${trx.title}</h4>
-              <p>${formattedDate} • ${categoryName} • ${walletName}</p>
+              <h4>${trx.title}${savingsBadgeHTML}</h4>
+              <p>${formattedDate} • <b>${categoryName}</b> • ${walletName}</p>
             </div>
             <div class="transaction-amount ${amountColor}">
               ${amountSign} ${formatRp(trx.amount)}
@@ -135,7 +147,6 @@ function renderReportData(transactions) {
     });
   }
 
-  // Hitung Nilai Bersih (Net)
   const netBalance = totalIncome - totalExpense;
 
   document.getElementById('period-income').innerText = formatRp(totalIncome);
@@ -146,10 +157,9 @@ function renderReportData(transactions) {
   
   netBalanceEl.innerText = formatRp(netBalance);
 
-  // Deteksi jika hasil kalkulasi filter berstatus minus
   if (netBalance < 0) {
     netBalanceEl.style.color = '#ef4444';
-    netBalanceEl.innerText += ' (MINUS!)';
+    netBalanceEl.innerText += ' (DEFISIT)';
     netCardEl.classList.add('warning-glow');
   } else {
     netBalanceEl.style.color = '#22c55e';
@@ -157,10 +167,6 @@ function renderReportData(transactions) {
   }
 }
 
-// ==========================================
-// EVENT LISTENERS & INITIALIZATION
-// ==========================================
 document.getElementById('period-filter').addEventListener('change', loadReport);
 
-// Jalankan otomatis saat halaman dibuka
 loadReport();
