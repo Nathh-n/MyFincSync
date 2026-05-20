@@ -1,6 +1,9 @@
 let goals = [];
-let selectedGoalId = null;
 let currentUserId = null;
+
+// STATE UNTUK MODAL AKSI
+let currentAction = null; // 'nabung', 'tarik', 'cairkan', 'hapus_refund'
+let selectedGoalId = null;
 let tempGoalData = {};
 
 async function initGoals() {
@@ -23,49 +26,21 @@ async function initGoals() {
   }
 }
 
-document.getElementById('goal-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
+// FORMAT RUPIAH HELPER
+const formatRp = (num) => {
+  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+};
+function formatRupiah(input) {
+  let value = input.value.replace(/[^0-9]/g, '');
+  input.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
 
-  const name = document.getElementById('goal_name').value;
-  const targetStr = document.getElementById('goal_target').value.replace(/\./g, '');
-  const target = parseInt(targetStr);
-  const currentStr = document.getElementById('goal_current').value.replace(/\./g, '');
-  let current = parseInt(currentStr) || 0;
-
-  if (current > target) {
-    showCustomAlert("Peringatan", "Uang terkumpul tidak boleh lebih dari target nominal!", "error");
-    return;
-  }
-
-  const btn = e.target.querySelector('button[type="submit"]');
-  const originalText = btn.innerHTML;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
-  btn.disabled = true;
-
-  const { error } = await supabaseClient
-    .from('savings_goals')
-    .insert([{ user_id: currentUserId, name, target, current }]);
-
-  if (error) {
-    showCustomAlert("Gagal", "Gagal membuat target: " + error.message, "error");
-  } else {
-    e.target.reset();
-    document.getElementById('goal_current').value = '0';
-    showCustomAlert("Berhasil", "Target tabungan baru berhasil dibuat.", "success");
-    await initGoals(); 
-  }
-
-  btn.innerHTML = originalText;
-  btn.disabled = false;
-});
-
+// =========================
+// RENDER UI
+// =========================
 function renderGoals() {
   const container = document.getElementById('goals-container');
   container.innerHTML = '';
-
-  const formatRp = (num) => {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
-  };
 
   if (goals.length === 0) {
     container.innerHTML = '<p style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px; border: 1px dashed var(--border); border-radius: 12px;">Belum ada target tabungan yang dibuat.</p>';
@@ -78,7 +53,31 @@ function renderGoals() {
 
     const isCompleted = percentage === 100;
     const barColor = isCompleted ? 'var(--green)' : '#0ea5e9'; 
-    const statusText = isCompleted ? '<span style="color:var(--green); font-weight:600;"><i class="fas fa-check-circle"></i> Target Tercapai!</span>' : `<span style="color:var(--primary); font-weight:600;">${percentage.toFixed(1)}% Terkumpul</span>`;
+    const statusText = isCompleted ? `<span style="color:var(--green); font-weight:600;"><i class="fas fa-check-circle"></i> Target Tercapai!</span>` : `<span style="color:var(--primary); font-weight:600;">${percentage.toFixed(1)}% Terkumpul</span>`;
+
+    let buttonsHTML = '';
+    if (isCompleted) {
+      buttonsHTML = `
+        <button onclick="liquidateGoal('${goal.id}', ${goal.current})" style="flex: 1; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 10px rgba(59,130,246,0.3);">
+          <i class="fas fa-box-open"></i> Cairkan Tabungan
+        </button>
+        <button onclick="deleteGoal('${goal.id}', ${goal.current})" style="padding: 12px 16px; background: var(--red-light); color: var(--red); border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+          <i class="fas fa-trash"></i>
+        </button>
+      `;
+    } else {
+      buttonsHTML = `
+        <button onclick="openActionNominal('${goal.id}', ${goal.current}, ${goal.target}, 'nabung')" style="flex: 1; padding: 10px; background: var(--green-light); color: var(--green); border: none; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer;">
+          <i class="fas fa-plus"></i> Nabung
+        </button>
+        <button onclick="openActionNominal('${goal.id}', ${goal.current}, ${goal.target}, 'tarik')" style="flex: 1; padding: 10px; background: #fef08a; color: #b45309; border: none; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer;">
+          <i class="fas fa-minus"></i> Tarik
+        </button>
+        <button onclick="deleteGoal('${goal.id}', ${goal.current})" style="padding: 10px 14px; background: var(--red-light); color: var(--red); border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+          <i class="fas fa-trash"></i>
+        </button>
+      `;
+    }
 
     const html = `
       <div class="card" style="border: 1px solid var(--border);">
@@ -96,235 +95,269 @@ function renderGoals() {
           <span style="color: var(--text-muted);">Sisa: ${formatRp(goal.target - goal.current)}</span>
         </div>
 
-        <div style="display: flex; gap: 10px;">
-          <button onclick="addFund('${goal.id}', ${goal.current}, ${goal.target})" style="flex: 1; padding: 12px; background: var(--green-light); color: var(--green); border: none; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer;">
-            <i class="fas fa-coins"></i> Nabung
-          </button>
-          <button onclick="deleteGoal('${goal.id}')" style="padding: 12px 16px; background: var(--red-light); color: var(--red); border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
-            <i class="fas fa-trash"></i>
-          </button>
+        <div style="display: flex; gap: 8px;">
+          ${buttonsHTML}
         </div>
       </div>
     `;
-    
     container.innerHTML += html;
   });
 }
 
 // =========================
-// LOGIKA CUSTOM DROPDOWN DOMPET
+// TAMBAH TARGET BARU
 // =========================
-const customSelectWrapper = document.getElementById('custom-wallet-select');
-const customSelectTrigger = document.getElementById('custom-select-trigger');
+document.getElementById('goal-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = document.getElementById('goal_name').value;
+  const target = parseInt(document.getElementById('goal_target').value.replace(/\./g, ''));
+  let current = parseInt(document.getElementById('goal_current').value.replace(/\./g, '')) || 0;
 
-// Buka/Tutup Dropdown saat diklik
-customSelectTrigger.addEventListener('click', function(e) {
-  e.stopPropagation(); // Mencegah dropdown langsung tertutup
-  customSelectWrapper.classList.toggle('open');
-});
-
-// Tutup dropdown jika klik di luar area dropdown
-document.addEventListener('click', function(e) {
-  if (customSelectWrapper && !customSelectWrapper.contains(e.target)) {
-    customSelectWrapper.classList.remove('open');
+  if (current > target) {
+    showCustomAlert("Peringatan", "Uang terkumpul tidak boleh lebih dari target nominal!", "error"); return;
   }
+
+  const btn = e.target.querySelector('button[type="submit"]');
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...'; btn.disabled = true;
+
+  const { error } = await supabaseClient.from('savings_goals').insert([{ user_id: currentUserId, name, target, current }]);
+  if (error) { showCustomAlert("Gagal", error.message, "error"); } 
+  else { e.target.reset(); document.getElementById('goal_current').value = '0'; showCustomAlert("Berhasil", "Target baru dibuat.", "success"); await initGoals(); }
+  btn.innerHTML = originalText; btn.disabled = false;
 });
 
-async function loadWalletsForNabung() {
-  const { data, error } = await supabaseClient
-    .from('wallets')
-    .select('id, name, balance')
-    .eq('user_id', currentUserId);
+// =========================
+// SETUP CUSTOM DROPDOWN LOGIC
+// =========================
+function setupCustomDropdown(wrapperId, triggerId, textId, optionsId, inputId, dataList) {
+  const wrapper = document.getElementById(wrapperId);
+  const trigger = document.getElementById(triggerId);
+  const optionsContainer = document.getElementById(optionsId);
+  const hiddenInput = document.getElementById(inputId);
 
-  const optionsContainer = document.getElementById('custom-select-options');
-  const hiddenInput = document.getElementById('nabung_wallet_id');
-  const triggerText = document.getElementById('custom-select-text');
+  // Bersihkan Listener lama agar tidak dobel
+  const newTrigger = trigger.cloneNode(true);
+  trigger.parentNode.replaceChild(newTrigger, trigger);
 
-  // Reset tampilan bawaan
+  // KUNCI PERBAIKAN: Ambil elemen text SETELAH trigger di-clone
+  const triggerText = document.getElementById(textId);
+
+  newTrigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    wrapper.classList.toggle('open');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (wrapper && !wrapper.contains(e.target)) wrapper.classList.remove('open');
+  });
+
   optionsContainer.innerHTML = '';
-  hiddenInput.value = '';
-  hiddenInput.removeAttribute('data-balance');
-  triggerText.innerText = 'Pilih Sumber Dompet';
+  hiddenInput.value = ''; hiddenInput.removeAttribute('data-balance'); triggerText.innerText = 'Pilih Dompet...';
 
-  if (!error && data) {
-    if (data.length === 0) {
-      optionsContainer.innerHTML = '<div class="custom-option">Tidak ada dompet tersedia</div>';
-      return;
-    }
+  if (!dataList || dataList.length === 0) {
+    optionsContainer.innerHTML = '<div class="custom-option">Tidak ada dompet</div>'; return;
+  }
 
-    data.forEach(wallet => {
-      const formattedBalance = new Intl.NumberFormat('id-ID').format(wallet.balance);
-      const optionEl = document.createElement('div');
-      optionEl.className = 'custom-option';
+  dataList.forEach(wallet => {
+    const formattedBalance = new Intl.NumberFormat('id-ID').format(wallet.balance);
+    const optionEl = document.createElement('div');
+    optionEl.className = 'custom-option';
+    optionEl.innerHTML = `<span style="font-weight: 600;">${wallet.name}</span><span style="font-size: 12px; color: var(--text-muted);">Rp ${formattedBalance}</span>`;
+    
+    optionEl.addEventListener('click', () => {
+      hiddenInput.value = wallet.id;
+      hiddenInput.setAttribute('data-balance', wallet.balance);
+      triggerText.innerText = wallet.name; // Teks sekarang akan update dengan benar!
+      wrapper.classList.remove('open');
+    });
+    optionsContainer.appendChild(optionEl);
+  });
+}
+
+async function fetchWallets() {
+  const { data } = await supabaseClient.from('wallets').select('id, name, balance').eq('user_id', currentUserId);
+  return data || [];
+}
+
+// =========================
+// BUKA MODAL AKSI
+// =========================
+async function openActionNominal(id, currentAmt, targetAmt, actionType) {
+  currentAction = actionType; selectedGoalId = id; tempGoalData = { currentAmt, targetAmt };
+  document.getElementById('nominal_amount').value = '';
+  
+  const wallets = await fetchWallets();
+  setupCustomDropdown('nominal-wallet-select', 'nominal-select-trigger', 'nominal-select-text', 'nominal-select-options', 'nominal_wallet_id', wallets);
+
+  const titleEl = document.getElementById('nominal-modal-title');
+  const descEl = document.getElementById('nominal-modal-desc');
+  const labelEl = document.getElementById('nominal-wallet-label');
+  const btnEl = document.getElementById('confirm-nominal-btn');
+  const btnText = document.getElementById('nominal-btn-text');
+
+  if (actionType === 'nabung') {
+    titleEl.innerText = "Tambah Tabungan"; descEl.innerText = "Masukkan nominal yang ingin ditabung.";
+    labelEl.innerText = "Ambil uang dari dompet:"; btnEl.style.background = "var(--green)"; btnText.innerText = "Nabung Sekarang";
+  } else {
+    titleEl.innerText = "Tarik Tabungan"; descEl.innerText = "Tarik uang dari tabungan untuk dikembalikan ke dompet.";
+    labelEl.innerText = "Kembalikan uang ke dompet:"; btnEl.style.background = "#f59e0b"; btnText.innerText = "Tarik Sekarang";
+  }
+  
+  document.getElementById('nominal-modal-overlay').classList.add('active');
+  document.getElementById('nominal-modal').classList.add('active');
+}
+
+async function liquidateGoal(id, currentAmt) {
+  currentAction = 'cairkan'; selectedGoalId = id; tempGoalData = { currentAmt };
+  
+  const wallets = await fetchWallets();
+  setupCustomDropdown('full-wallet-select', 'full-select-trigger', 'full-select-text', 'full-select-options', 'full_wallet_id', wallets);
+
+  document.getElementById('full-modal-title').innerText = "Cairkan Tabungan";
+  document.getElementById('full-modal-desc').innerText = `Target Tercapai! Silakan pilih dompet untuk menerima pencairan dana sebesar ${formatRp(currentAmt)}.`;
+  document.getElementById('confirm-full-btn').style.background = "var(--primary)";
+  document.getElementById('full-btn-text').innerText = "Cairkan Sekarang";
+
+  document.getElementById('full-action-modal-overlay').classList.add('active');
+  document.getElementById('full-action-modal').classList.add('active');
+}
+
+function deleteGoal(id, currentAmt) {
+  if (currentAmt > 0) {
+    currentAction = 'hapus_refund'; selectedGoalId = id; tempGoalData = { currentAmt };
+    
+    fetchWallets().then(wallets => {
+      setupCustomDropdown('full-wallet-select', 'full-select-trigger', 'full-select-text', 'full-select-options', 'full_wallet_id', wallets);
+      document.getElementById('full-modal-title').innerText = "Hapus Target Berisi Saldo";
+      document.getElementById('full-modal-desc').innerText = `Perhatian! Ada dana sebesar ${formatRp(currentAmt)} di target ini. Silakan pilih dompet untuk mengamankan uang tersebut sebelum target dihapus.`;
+      document.getElementById('confirm-full-btn').style.background = "var(--red)";
+      document.getElementById('full-btn-text').innerText = "Kembalikan & Hapus";
       
-      // Isi desain tiap list dompet
-      optionEl.innerHTML = `
-        <span style="font-weight: 600;">${wallet.name}</span>
-        <span style="font-size: 12px; color: var(--text-muted);">Rp ${formattedBalance}</span>
-      `;
-
-      // Jika opsi dipilih
-      optionEl.addEventListener('click', () => {
-        hiddenInput.value = wallet.id;
-        hiddenInput.setAttribute('data-balance', wallet.balance);
-        triggerText.innerText = wallet.name;
-        customSelectWrapper.classList.remove('open');
-      });
-
-      optionsContainer.appendChild(optionEl);
+      document.getElementById('full-action-modal-overlay').classList.add('active');
+      document.getElementById('full-action-modal').classList.add('active');
+    });
+  } else {
+    showCustomConfirm("Yakin ingin menghapus target kosong ini?", async () => {
+      await supabaseClient.from('savings_goals').delete().eq('id', id);
+      showCustomAlert("Terhapus", "Target berhasil dihapus.", "success");
+      initGoals();
     });
   }
 }
 
-async function addFund(id, currentAmt, targetAmt) {
-  selectedGoalId = id; 
-  tempGoalData = { currentAmt, targetAmt };
-  document.getElementById('nabung_amount').value = ''; 
-  
-  await loadWalletsForNabung();
-  
-  document.getElementById('nabung-modal-overlay').classList.add('active');
-  document.getElementById('nabung-modal').classList.add('active');
+function closeActionModals() {
+  document.getElementById('nominal-modal-overlay').classList.remove('active');
+  document.getElementById('nominal-modal').classList.remove('active');
+  document.getElementById('full-action-modal-overlay').classList.remove('active');
+  document.getElementById('full-action-modal').classList.remove('active');
 }
 
-function closeNabungModal() {
-  selectedGoalId = null;
-  document.getElementById('nabung-modal-overlay').classList.remove('active');
-  document.getElementById('nabung-modal').classList.remove('active');
-  customSelectWrapper.classList.remove('open'); // Tutup juga dropdown jika terbuka
-}
+// =========================
+// PROSES KONFIRMASI MODAL (Dengan Tracking History)
+// =========================
+document.getElementById('confirm-nominal-btn').addEventListener('click', async () => {
+  const walletId = document.getElementById('nominal_wallet_id').value;
+  const amount = parseInt(document.getElementById('nominal_amount').value.replace(/\./g, ''));
+  const currentWalletBalance = parseInt(document.getElementById('nominal_wallet_id').getAttribute('data-balance'));
 
-document.getElementById('close-modal-btn').addEventListener('click', closeNabungModal);
-document.getElementById('nabung-modal-overlay').addEventListener('click', closeNabungModal);
+  if (!walletId) { showCustomAlert("Peringatan", "Pilih dompet terlebih dahulu!", "error"); return; }
+  if (isNaN(amount) || amount <= 0) { showCustomAlert("Peringatan", "Masukkan nominal yang valid!", "error"); return; }
 
-document.getElementById('confirm-nabung-btn').addEventListener('click', async () => {
-  if (!selectedGoalId) return;
-
-  const hiddenInput = document.getElementById('nabung_wallet_id');
-  const selectedWalletId = hiddenInput.value;
+  let newGoalCurrent, newWalletBalance;
   
-  if (!selectedWalletId) {
-    showCustomAlert("Peringatan", "Pilih dompet sumber uang terlebih dahulu!", "error");
-    return;
+  // Dapatkan Nama Target untuk dicatat di History
+  const goalObj = goals.find(g => g.id === selectedGoalId);
+  const goalName = goalObj ? goalObj.name : 'Target Tabungan';
+
+  if (currentAction === 'nabung') {
+    // KUNCI PERBAIKAN: Cek sisa target agar tidak bisa input nominal melebihi sisa
+    const sisaTarget = tempGoalData.targetAmt - tempGoalData.currentAmt;
+    if (amount > sisaTarget) {
+        showCustomAlert("Peringatan", `Nominal terlalu besar! Maksimal uang yang bisa ditabung untuk target ini adalah Rp ${new Intl.NumberFormat('id-ID').format(sisaTarget)}.`, "error");
+        return;
+    }
+    if (amount > currentWalletBalance) { showCustomAlert("Peringatan", "Saldo dompet tidak mencukupi!", "error"); return; }
+    
+    newGoalCurrent = tempGoalData.currentAmt + amount;
+    newWalletBalance = currentWalletBalance - amount; 
+  } else if (currentAction === 'tarik') {
+    if (amount > tempGoalData.currentAmt) { showCustomAlert("Peringatan", "Nominal tarik melebihi isi tabungan!", "error"); return; }
+    newGoalCurrent = tempGoalData.currentAmt - amount;
+    newWalletBalance = currentWalletBalance + amount; 
   }
 
-  const amountStr = document.getElementById('nabung_amount').value.replace(/\./g, '');
-  const amount = parseInt(amountStr);
+  const btn = document.getElementById('confirm-nominal-btn');
+  const ogText = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...'; btn.disabled = true;
 
-  if (isNaN(amount) || amount <= 0) {
-    showCustomAlert("Peringatan", "Masukkan nominal yang valid!", "error");
-    return;
-  }
+  // 1. Eksekusi Update Dompet & Target
+  await supabaseClient.from('wallets').update({ balance: newWalletBalance }).eq('id', walletId);
+  await supabaseClient.from('savings_goals').update({ current: newGoalCurrent }).eq('id', selectedGoalId);
 
-  // Cek saldo dengan mengambil atribut yang kita simpan saat milih
-  const currentWalletBalance = parseInt(hiddenInput.getAttribute('data-balance'));
+  // 2. KUNCI PERBAIKAN: Tracking Transaksi
+  const txDate = new Date().toISOString().split('T')[0];
+  await supabaseClient.from('transactions').insert([{
+    user_id: currentUserId,
+    title: currentAction === 'nabung' ? `Nabung: ${goalName}` : `Tarik Tabungan: ${goalName}`,
+    amount: amount,
+    type: currentAction === 'nabung' ? 'expense' : 'income',
+    transaction_date: txDate,
+    wallet_id: walletId,
+    description: 'Sistem Target Tabungan'
+  }]);
 
-  if (amount > currentWalletBalance) {
-    showCustomAlert("Peringatan", "Saldo dompet tidak mencukupi untuk ditabung!", "error");
-    return;
-  }
-
-  let newCurrent = tempGoalData.currentAmt + amount;
-  if (newCurrent > tempGoalData.targetAmt) newCurrent = tempGoalData.targetAmt;
-
-  const btn = document.getElementById('confirm-nabung-btn');
-  const originalBtnText = btn.innerHTML;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
-  btn.disabled = true;
-
-  // Potong Saldo Dompet
-  const newWalletBalance = currentWalletBalance - amount;
-  const { error: walletError } = await supabaseClient
-    .from('wallets')
-    .update({ balance: newWalletBalance })
-    .eq('id', selectedWalletId);
-
-  if (walletError) {
-    showCustomAlert("Gagal", "Sistem gagal memotong saldo dompet: " + walletError.message, "error");
-    btn.innerHTML = originalBtnText;
-    btn.disabled = false;
-    return;
-  }
-
-  // Tambah Saldo Tabungan
-  const { error: goalError } = await supabaseClient
-    .from('savings_goals')
-    .update({ current: newCurrent })
-    .eq('id', selectedGoalId);
-
-  btn.innerHTML = originalBtnText;
-  btn.disabled = false;
-
-  if (!goalError) {
-    showCustomAlert("Berhasil", "Tabungan ditambahkan dan uang telah dipotong dari dompetmu!", "success");
-    await initGoals(); 
-    closeNabungModal(); 
-  } else {
-    showCustomAlert("Gagal", "Gagal menambah tabungan: " + goalError.message, "error");
-  }
+  btn.innerHTML = ogText; btn.disabled = false; closeActionModals();
+  showCustomAlert("Berhasil", "Transaksi tabungan berhasil diproses!", "success");
+  initGoals();
 });
 
-function deleteGoal(id) {
-  showCustomConfirm("Yakin ingin menghapus target ini?", async () => {
-    const { error } = await supabaseClient
-      .from('savings_goals')
-      .delete()
-      .eq('id', id);
+document.getElementById('confirm-full-btn').addEventListener('click', async () => {
+  const walletId = document.getElementById('full_wallet_id').value;
+  const currentWalletBalance = parseInt(document.getElementById('full_wallet_id').getAttribute('data-balance'));
 
-    if (!error) {
-      showCustomAlert("Terhapus", "Target berhasil dihapus.", "success");
-      initGoals(); 
-    } else {
-      showCustomAlert("Gagal", error.message, "error");
-    }
-  });
-}
+  if (!walletId) { showCustomAlert("Peringatan", "Pilih dompet penerima dana terlebih dahulu!", "error"); return; }
+
+  const btn = document.getElementById('confirm-full-btn');
+  const ogText = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...'; btn.disabled = true;
+
+  const goalObj = goals.find(g => g.id === selectedGoalId);
+  const goalName = goalObj ? goalObj.name : 'Target Tabungan';
+
+  // 1. Eksekusi Update Dompet & Hapus Target
+  const newWalletBalance = currentWalletBalance + tempGoalData.currentAmt;
+  await supabaseClient.from('wallets').update({ balance: newWalletBalance }).eq('id', walletId);
+  await supabaseClient.from('savings_goals').delete().eq('id', selectedGoalId);
+
+  // 2. KUNCI PERBAIKAN: Tracking Transaksi
+  const txDate = new Date().toISOString().split('T')[0];
+  await supabaseClient.from('transactions').insert([{
+    user_id: currentUserId,
+    title: currentAction === 'cairkan' ? `Cairkan Target: ${goalName}` : `Refund Target: ${goalName}`,
+    amount: tempGoalData.currentAmt,
+    type: 'income',
+    transaction_date: txDate,
+    wallet_id: walletId,
+    description: 'Pencairan sistem Target Tabungan'
+  }]);
+
+  btn.innerHTML = ogText; btn.disabled = false; closeActionModals();
+  showCustomAlert("Berhasil", "Tabungan berhasil diproses dan target dihapus!", "success");
+  initGoals();
+});
 
 // =========================
 // SISTEM POP-UP GLOBAL
 // =========================
 function showCustomAlert(title, message, type = 'success') {
-  document.getElementById('alert-title').innerText = title;
-  document.getElementById('alert-message').innerText = message;
+  document.getElementById('alert-title').innerText = title; document.getElementById('alert-message').innerText = message;
   const iconEl = document.getElementById('alert-icon');
-  
-  if(type === 'success') {
-     iconEl.innerHTML = '<i class="fas fa-check-circle"></i>';
-     iconEl.style.color = 'var(--green)';
-  } else {
-     iconEl.innerHTML = '<i class="fas fa-times-circle"></i>';
-     iconEl.style.color = 'var(--red)';
-  }
-  
-  document.getElementById('alert-modal-overlay').classList.add('active');
-  document.getElementById('alert-modal').classList.add('active');
+  if(type === 'success') { iconEl.innerHTML = '<i class="fas fa-check-circle"></i>'; iconEl.style.color = 'var(--green)'; } 
+  else { iconEl.innerHTML = '<i class="fas fa-times-circle"></i>'; iconEl.style.color = 'var(--red)'; }
+  document.getElementById('alert-modal-overlay').classList.add('active'); document.getElementById('alert-modal').classList.add('active');
 }
-
-function closeCustomAlert() {
-  document.getElementById('alert-modal-overlay').classList.remove('active');
-  document.getElementById('alert-modal').classList.remove('active');
-}
-
+function closeCustomAlert() { document.getElementById('alert-modal-overlay').classList.remove('active'); document.getElementById('alert-modal').classList.remove('active'); }
 let confirmCallback = null;
-function showCustomConfirm(message, callback) {
-  document.getElementById('confirm-message').innerText = message;
-  confirmCallback = callback;
-  
-  document.getElementById('confirm-modal-overlay').classList.add('active');
-  document.getElementById('confirm-modal').classList.add('active');
-}
-
-function closeCustomConfirm(isConfirmed) {
-  document.getElementById('confirm-modal-overlay').classList.remove('active');
-  document.getElementById('confirm-modal').classList.remove('active');
-  if (isConfirmed && confirmCallback) {
-    confirmCallback(); 
-  }
-}
+function showCustomConfirm(message, callback) { document.getElementById('confirm-message').innerText = message; confirmCallback = callback; document.getElementById('confirm-modal-overlay').classList.add('active'); document.getElementById('confirm-modal').classList.add('active'); }
+function closeCustomConfirm(isConfirmed) { document.getElementById('confirm-modal-overlay').classList.remove('active'); document.getElementById('confirm-modal').classList.remove('active'); if (isConfirmed && confirmCallback) confirmCallback(); }
 
 initGoals();
-
-function formatRupiah(input) {
-  let value = input.value.replace(/[^0-9]/g, '');
-  input.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-}
