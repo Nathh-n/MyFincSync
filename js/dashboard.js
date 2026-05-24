@@ -1,5 +1,11 @@
 let financeChart;
 
+// STATE UNTUK HIDE/SHOW BALANCE
+// Mengecek apakah sebelumnya user menyembunyikan saldo (tersimpan di browser)
+let isBalanceHidden = localStorage.getItem('hideBalance') === 'true';
+let currentFormattedBalance = "Rp 0";
+let isBalanceMinus = false;
+
 async function loadSummary() {
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) return;
@@ -25,17 +31,53 @@ async function loadSummary() {
   
   const netBalanceEl = document.getElementById('net-balance');
   const mainCardEl = document.querySelector('.main-balance-card');
-  netBalanceEl.innerText = formatRp(activeBalance);
+  
+  // Simpan data saldo murni sebelum difilter oleh sistem Hide/Show
+  currentFormattedBalance = formatRp(activeBalance);
+  isBalanceMinus = activeBalance < 0;
 
-  if (activeBalance < 0) {
-    netBalanceEl.style.color = '#fee2e2'; netBalanceEl.innerText += ' (MINUS)';
+  if (isBalanceMinus) {
+    netBalanceEl.style.color = '#fee2e2'; 
     if(mainCardEl) mainCardEl.style.background = 'linear-gradient(135deg, #ef4444, #f87171)';
   } else {
     netBalanceEl.style.color = 'white';
     if(mainCardEl) mainCardEl.style.background = 'linear-gradient(135deg, var(--primary), #60a5fa)';
   }
+
+  // Panggil fungsi render balance
+  updateBalanceDisplay();
   renderFinanceChart(totalIncome, totalExpense);
 }
+
+// =========================
+// FUNGSI TOGGLE HIDE/SHOW BALANCE
+// =========================
+function toggleBalance() {
+  isBalanceHidden = !isBalanceHidden;
+  localStorage.setItem('hideBalance', isBalanceHidden); // Simpan pilihan ke memori browser
+  updateBalanceDisplay();
+}
+
+function updateBalanceDisplay() {
+  const netBalanceEl = document.getElementById('net-balance');
+  const eyeIcon = document.getElementById('eye-icon');
+  
+  if (isBalanceHidden) {
+    // Jika mode rahasia aktif
+    netBalanceEl.innerText = "Rp •••••••";
+    eyeIcon.classList.remove('fa-eye');
+    eyeIcon.classList.add('fa-eye-slash'); // Ganti icon jadi mata tercoret
+  } else {
+    // Jika mode rahasia mati (tampilkan angka asli)
+    netBalanceEl.innerText = currentFormattedBalance + (isBalanceMinus ? ' (MINUS)' : '');
+    eyeIcon.classList.remove('fa-eye-slash');
+    eyeIcon.classList.add('fa-eye');
+  }
+}
+
+// =========================
+// SISA FUNGSI BAWAAN
+// =========================
 
 function renderFinanceChart(income, expense) {
   const ctx = document.getElementById('financeChart').getContext('2d');
@@ -100,7 +142,6 @@ async function loadRecentTransactions() {
 }
 
 function undoTransaction(trxId, walletId, amount, type) {
-  // PENCEGAHAN GANDA: Tolak jika tipe transfer lolos ke fungsi ini
   if (type === 'transfer') {
     showCustomAlert("Ditolak", "Transaksi tabungan internal tidak dapat dibatalkan dari Dashboard.", "error");
     return;
@@ -113,11 +154,10 @@ function undoTransaction(trxId, walletId, amount, type) {
         let currentBalance = parseInt(wData.balance) || 0;
         let restoredBalance = currentBalance;
 
-        // LOGIKA AMAN & SPESIFIK
         if (type === 'expense') {
-          restoredBalance = currentBalance + amount; // Pengeluaran batal, uang balik
+          restoredBalance = currentBalance + amount; 
         } else if (type === 'income') {
-          restoredBalance = currentBalance - amount; // Pemasukan batal, uang ditarik lagi
+          restoredBalance = currentBalance - amount; 
         }
 
         await supabaseClient.from('wallets').update({ balance: restoredBalance }).eq('id', walletId);
