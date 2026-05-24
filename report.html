@@ -12,71 +12,34 @@
 
   <style>
     /* Styling Filter Lebih Compact */
-    .filter-card {
-      background: var(--card-bg);
-      border-radius: 12px;
-      padding: 12px 16px;
-      box-shadow: var(--shadow-sm);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 15px;
-      margin-top: 5px;
-      border: 1px solid var(--border);
-    }
+    .filter-card { background: var(--card-bg); border-radius: 12px; padding: 12px 16px; box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-top: 5px; border: 1px solid var(--border); }
     .filter-card h3 { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
-    .filter-card select {
-      flex: 1; padding: 8px 12px; border: 1px solid var(--border);
-      border-radius: 8px; background: #f8fafc; color: var(--text-main);
-      font-size: 13px; font-weight: 600; outline: none; cursor: pointer;
-    }
+    .filter-card select { flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: #f8fafc; color: var(--text-main); font-size: 13px; font-weight: 600; outline: none; cursor: pointer; }
     .filter-card select:focus { border-color: var(--primary); }
     
     /* Summary Grid Lebih Compact & Modern */
-    .report-summary-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 10px;
-    }
-    .summary-box {
-      background: var(--card-bg);
-      border-radius: 12px;
-      padding: 12px;
-      box-shadow: var(--shadow-sm);
-      text-align: center;
-      border: 1px solid var(--border);
-    }
+    .report-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .summary-box { background: var(--card-bg); border-radius: 12px; padding: 12px; box-shadow: var(--shadow-sm); text-align: center; border: 1px solid var(--border); }
     .summary-box h4 { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
     .summary-box p { font-size: 15px; font-weight: 700; }
     
-    .net-box {
-      grid-column: 1 / -1; 
-      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-      padding: 14px;
-    }
-    .net-box h4 { color: var(--text-main); font-weight: 700; font-size: 12px; }
+    .net-box { grid-column: 1 / -1; background: linear-gradient(135deg, #f8fafc, #f1f5f9); padding: 14px; position: relative; }
+    .net-box h4 { color: var(--text-main); font-weight: 700; font-size: 12px; margin-top: 5px; }
     .net-box p { font-size: 20px; color: var(--primary); font-weight: 800; margin-top: 2px;}
 
-    .warning-glow {
-      border: 1px solid var(--red) !important;
-      background: var(--red-light) !important;
-    }
+    .warning-glow { border: 1px solid var(--red) !important; background: var(--red-light) !important; }
 
-    /* Micro Insight Box */
-    .micro-insight {
-      text-align: center; font-size: 12px; font-weight: 600;
-      padding: 10px; border-radius: 8px; margin-top: 10px;
-      display: none; /* Disembunyikan dulu sampai JS memproses data */
-      animation: fadeIn 0.5s ease-in-out;
-    }
-    .insight-positive { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; } 
-    .insight-negative { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
-    .insight-neutral { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+    /* Tombol Animasi Insight */
+    .insight-btn { position: absolute; top: 12px; right: 15px; background: transparent; border: none; font-size: 18px; cursor: pointer; transition: 0.2s; display: none; }
+    .insight-btn:hover { transform: scale(1.1); }
+    .pulse-animation { animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
+
+    /* Tombol Pagination */
+    .btn-page { padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--card-bg); font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-main); transition: 0.2s; }
+    .btn-page:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+    .btn-page:disabled { opacity: 0.4; cursor: not-allowed; }
     
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
-    
-    /* Jarak bawah navigasi */
     .report-content { padding-bottom: 100px; }
   </style>
 </head>
@@ -101,8 +64,21 @@
             <option value="weekly">Minggu Ini</option>
             <option value="monthly" selected>Bulan Ini</option>
             <option value="yearly">Tahun Ini</option>
+            <option value="custom">Pilih Tanggal Manual</option>
           </select>
         </div>
+        
+        <div id="custom-date-container" style="display: none; gap: 10px; margin-top: 10px; background: var(--card-bg); padding: 12px; border-radius: 12px; border: 1px solid var(--border);">
+          <div style="flex: 1;">
+            <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">Dari Tanggal:</label>
+            <input type="date" id="custom-start" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; outline: none;">
+          </div>
+          <div style="flex: 1;">
+            <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">Sampai Tanggal:</label>
+            <input type="date" id="custom-end" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; outline: none;">
+          </div>
+        </div>
+
         <p id="date-range-text" style="font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 8px; font-style: italic; font-weight: 500;"></p>
       </section>
 
@@ -120,21 +96,37 @@
             <p id="period-expense" class="text-red">Rp 0</p>
           </div>
           <div class="summary-box net-box" id="period-net-card">
+            <button id="insight-btn" class="insight-btn" onclick="showInsightAlert()" title="Lihat Analisis"></button>
             <h4>Arus Kas Bersih (Net Cash Flow)</h4>
             <p id="period-net-balance">Rp 0</p>
           </div>
         </div>
-        <div id="micro-insight-container" class="micro-insight"></div>
       </section>
 
       <section class="content-section">
         <div class="section-header">
           <h3>Rincian Transaksi</h3>
         </div>
-        <div class="transaction-list" id="report-transaction-list">
+        
+        <div class="transaction-list" id="report-transaction-list"></div>
+        
+        <div id="pagination-controls" style="display: none; justify-content: space-between; align-items: center; margin-top: 20px; padding: 0 5px;">
+          <button id="prev-page-btn" class="btn-page" onclick="changePage(-1)"><i class="fas fa-chevron-left"></i> Prev</button>
+          <span id="page-info" style="font-size: 12px; font-weight: 600; color: var(--text-muted);">Page 1 of 1</span>
+          <button id="next-page-btn" class="btn-page" onclick="changePage(1)">Next <i class="fas fa-chevron-right"></i></button>
         </div>
       </section>
 
+    </div>
+
+    <div class="custom-modal-overlay" id="alert-modal-overlay"></div>
+    <div class="custom-modal" id="alert-modal">
+      <div class="modal-body" style="text-align: center; padding: 10px 0;">
+        <div id="alert-icon" style="font-size: 45px; margin-bottom: 10px;"></div>
+        <h3 id="alert-title" style="font-size: 18px; color: var(--text-main); margin-bottom: 8px;">Pesan</h3>
+        <p id="alert-message" style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5;">Isi pesan</p>
+        <button onclick="closeCustomAlert()" class="btn-primary" style="width: 100%; background: var(--primary);">Tutup</button>
+      </div>
     </div>
 
   </div>
@@ -155,6 +147,7 @@
       <div class="fab-menu" id="fab-menu">
         <a href="income.html" class="fab-action btn-income"><i class="fas fa-arrow-down"></i> Pemasukan</a>
         <a href="expense.html" class="fab-action btn-expense"><i class="fas fa-arrow-up"></i> Pengeluaran</a>
+        <a href="transfer.html" class="fab-action" style="background: var(--primary);"><i class="fas fa-exchange-alt"></i> Transfer</a>
       </div>
     </div>
 

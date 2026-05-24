@@ -1,40 +1,65 @@
 let financeChart;
 
 // STATE UNTUK HIDE/SHOW BALANCE
-// Mengecek apakah sebelumnya user menyembunyikan saldo (tersimpan di browser)
 let isBalanceHidden = localStorage.getItem('hideBalance') === 'true';
+
+// Variabel Memori
 let currentFormattedBalance = "Rp 0";
+let currentFormattedIncome = "Rp 0";
+let currentFormattedExpense = "Rp 0";
 let isBalanceMinus = false;
+
+// Global Data untuk Render Ulang saat Hide/Show Ditekan
+let globalWallets = [];
+let globalActiveBalance = 0;
+let globalExpenseByCategory = {};
 
 async function loadSummary() {
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) return;
 
-  const { data: transactions } = await supabaseClient.from('transactions').select('amount, type').eq('user_id', user.id);
-  let totalIncome = 0; let totalExpense = 0;
+  const { data: transactions } = await supabaseClient
+    .from('transactions')
+    .select('amount, type, categories(name)')
+    .eq('user_id', user.id);
+
+  let totalIncome = 0; 
+  let totalExpense = 0;
+  let expenseByCategory = {};
 
   if (transactions) {
     transactions.forEach(trx => {
-      if (trx.type === 'income') totalIncome += trx.amount;
-      else if (trx.type === 'expense') totalExpense += trx.amount;
+      if (trx.type === 'income') {
+        totalIncome += trx.amount;
+      } else if (trx.type === 'expense') {
+        totalExpense += trx.amount;
+        
+        let catName = trx.categories ? trx.categories.name : 'Lainnya';
+        if (!expenseByCategory[catName]) expenseByCategory[catName] = 0;
+        expenseByCategory[catName] += trx.amount;
+      }
     });
   }
 
-  const { data: wallets } = await supabaseClient.from('wallets').select('balance').eq('user_id', user.id);
+  const { data: wallets } = await supabaseClient.from('wallets').select('name, balance').eq('user_id', user.id);
   let activeBalance = 0;
-  if (wallets) { wallets.forEach(wallet => { activeBalance += Number(wallet.balance) || 0; }); }
+  if (wallets) { 
+    wallets.forEach(wallet => { activeBalance += Number(wallet.balance) || 0; }); 
+  }
 
   const formatRp = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
 
-  document.getElementById('total-income').innerText = formatRp(totalIncome);
-  document.getElementById('total-expense').innerText = formatRp(totalExpense);
-  
-  const netBalanceEl = document.getElementById('net-balance');
-  const mainCardEl = document.querySelector('.main-balance-card');
-  
-  // Simpan data saldo murni sebelum difilter oleh sistem Hide/Show
+  currentFormattedIncome = formatRp(totalIncome);
+  currentFormattedExpense = formatRp(totalExpense);
   currentFormattedBalance = formatRp(activeBalance);
   isBalanceMinus = activeBalance < 0;
+  
+  globalWallets = wallets || [];
+  globalActiveBalance = activeBalance;
+  globalExpenseByCategory = expenseByCategory;
+
+  const netBalanceEl = document.getElementById('net-balance');
+  const mainCardEl = document.querySelector('.main-balance-card');
 
   if (isBalanceMinus) {
     netBalanceEl.style.color = '#fee2e2'; 
@@ -44,7 +69,6 @@ async function loadSummary() {
     if(mainCardEl) mainCardEl.style.background = 'linear-gradient(135deg, var(--primary), #60a5fa)';
   }
 
-  // Panggil fungsi render balance
   updateBalanceDisplay();
   renderFinanceChart(totalIncome, totalExpense);
 }
@@ -54,31 +78,37 @@ async function loadSummary() {
 // =========================
 function toggleBalance() {
   isBalanceHidden = !isBalanceHidden;
-  localStorage.setItem('hideBalance', isBalanceHidden); // Simpan pilihan ke memori browser
+  localStorage.setItem('hideBalance', isBalanceHidden);
   updateBalanceDisplay();
 }
 
 function updateBalanceDisplay() {
   const netBalanceEl = document.getElementById('net-balance');
+  const incomeEl = document.getElementById('total-income');
+  const expenseEl = document.getElementById('total-expense');
   const eyeIcon = document.getElementById('eye-icon');
   
   if (isBalanceHidden) {
-    // Jika mode rahasia aktif
     netBalanceEl.innerText = "Rp •••••••";
+    incomeEl.innerText = "Rp •••••••";
+    expenseEl.innerText = "Rp •••••••";
     eyeIcon.classList.remove('fa-eye');
-    eyeIcon.classList.add('fa-eye-slash'); // Ganti icon jadi mata tercoret
+    eyeIcon.classList.add('fa-eye-slash'); 
   } else {
-    // Jika mode rahasia mati (tampilkan angka asli)
     netBalanceEl.innerText = currentFormattedBalance + (isBalanceMinus ? ' (MINUS)' : '');
+    incomeEl.innerText = currentFormattedIncome;
+    expenseEl.innerText = currentFormattedExpense;
     eyeIcon.classList.remove('fa-eye-slash');
     eyeIcon.classList.add('fa-eye');
   }
+
+  renderTopSpends();
+  renderWalletDistribution();
 }
 
 // =========================
-// SISA FUNGSI BAWAAN
+// RENDER COMPONENT STRUKTUR KEUANGAN (COMPACT)
 // =========================
-
 function renderFinanceChart(income, expense) {
   const ctx = document.getElementById('financeChart').getContext('2d');
   if (financeChart) financeChart.destroy();
@@ -89,10 +119,94 @@ function renderFinanceChart(income, expense) {
       labels: hasData ? ['Pemasukan', 'Pengeluaran'] : ['Belum Ada Data', ''],
       datasets: [{ data: hasData ? [income, expense] : [1, 0], backgroundColor: hasData ? ['#10b981', '#ef4444'] : ['#e2e8f0', '#e2e8f0'], borderWidth: 0 }]
     },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, tooltip: { enabled: hasData } } }
+    options: { 
+      responsive: true, 
+      maintainAspectRatio: false, 
+      cutout: '65%', // KUNCI PERBAIKAN: Memperbesar lubang donat agar elegan di area sempit
+      layout: { padding: 0 },
+      plugins: { 
+        legend: { 
+          position: 'right',
+          labels: { boxWidth: 10, padding: 8, font: { size: 10 } } 
+        }, 
+        tooltip: { enabled: hasData } 
+      } 
+    }
   });
 }
 
+function renderTopSpends() {
+  const container = document.getElementById('top-spends-container');
+  if (!container) return;
+
+  const sorted = Object.keys(globalExpenseByCategory)
+    .map(cat => ({ name: cat, amount: globalExpenseByCategory[cat] }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 3); 
+
+  if (sorted.length === 0) {
+    container.innerHTML = '<p style="font-size:11px; color:var(--text-muted); text-align:center;">Belum ada pengeluaran.</p>';
+    return;
+  }
+
+  let html = '';
+  const formatRp = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+
+  sorted.forEach((item, index) => {
+    const displayAmount = isBalanceHidden ? "Rp •••••••" : formatRp(item.amount);
+    html += `
+      <div class="top-spend-item">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="background:var(--red-light); color:var(--red); width:20px; height:20px; border-radius:6px; display:flex; justify-content:center; align-items:center; font-size:10px; font-weight:bold;">${index+1}</div>
+          <span style="font-size:12px; font-weight:600; color:var(--text-main);">${item.name}</span>
+        </div>
+        <span style="font-size:12px; font-weight:700; color:var(--red);">${displayAmount}</span>
+      </div>
+    `;
+  });
+  
+  container.innerHTML = html;
+}
+
+function renderWalletDistribution() {
+  const container = document.getElementById('wallet-dist-container');
+  if (!container) return;
+
+  if (globalWallets.length === 0 || globalActiveBalance === 0) {
+    container.innerHTML = '<p style="font-size:11px; color:var(--text-muted); text-align:center;">Data dompet tidak tersedia.</p>';
+    return;
+  }
+
+  let html = '';
+  const formatRp = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+
+  const sortedWallets = [...globalWallets].sort((a,b) => b.balance - a.balance).slice(0, 3);
+
+  sortedWallets.forEach(w => {
+    let percentage = globalActiveBalance > 0 ? (w.balance / globalActiveBalance) * 100 : 0;
+    if (percentage < 0) percentage = 0; 
+    if (percentage > 100) percentage = 100;
+
+    const displayAmount = isBalanceHidden ? "Rp •••••••" : formatRp(w.balance);
+
+    html += `
+      <div style="margin-bottom: 6px;">
+        <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px;">
+          <span style="font-weight:600; color:var(--text-main);">${w.name}</span>
+          <span style="color:var(--text-muted);">${displayAmount} <b style="color:var(--green);">(${percentage.toFixed(1)}%)</b></span>
+        </div>
+        <div style="background:#f1f5f9; border-radius:4px; height:6px; width:100%; overflow:hidden;">
+          <div style="background:var(--green); height:100%; border-radius:4px; width:${percentage}%; transition: 1s ease-out;"></div>
+        </div>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
+// =========================
+// DATA TRANSAKSI
+// =========================
 async function loadRecentTransactions() {
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) return;
@@ -143,7 +257,7 @@ async function loadRecentTransactions() {
 
 function undoTransaction(trxId, walletId, amount, type) {
   if (type === 'transfer') {
-    showCustomAlert("Ditolak", "Transaksi tabungan internal tidak dapat dibatalkan dari Dashboard.", "error");
+    showCustomAlert("Ditolak", "Transaksi internal tidak dapat dibatalkan dari Dashboard.", "error");
     return;
   }
 
@@ -154,11 +268,8 @@ function undoTransaction(trxId, walletId, amount, type) {
         let currentBalance = parseInt(wData.balance) || 0;
         let restoredBalance = currentBalance;
 
-        if (type === 'expense') {
-          restoredBalance = currentBalance + amount; 
-        } else if (type === 'income') {
-          restoredBalance = currentBalance - amount; 
-        }
+        if (type === 'expense') restoredBalance = currentBalance + amount; 
+        else if (type === 'income') restoredBalance = currentBalance - amount; 
 
         await supabaseClient.from('wallets').update({ balance: restoredBalance }).eq('id', walletId);
       }

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Transfer Antar Dompet</title>
+  
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  
+  <style>
+    .top-header-back { display: flex; align-items: center; gap: 15px; padding: 24px 20px 16px 20px; }
+    .top-header-back a { color: var(--text-main); font-size: 20px; text-decoration: none; }
+    .top-header-back h1 { font-size: 20px; font-weight: 700; color: var(--text-main); }
+    
+    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .form-group label { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+    .form-control { width: 100%; padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; font-size: 14px; outline: none; background: #f8fafc; transition: 0.2s; }
+    .form-control:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 3px #bfdbfe; }
+    
+    /* Input nominal warna BIRU khusus transfer */
+    .amount-input {
+      font-size: 32px !important; font-weight: 800; color: var(--primary) !important;
+      text-align: center; padding: 20px !important; background: white !important;
+    }
+    .amount-input::placeholder { color: #bfdbfe; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <div class="mobile-wrapper" style="background: white;">
+
+    <header class="top-header-back">
+      <a href="dashboard.html"><i class="fas fa-arrow-left"></i></a>
+      <h1>Transfer Internal</h1>
+    </header>
+
+    <section class="content-section" style="padding-top: 10px;">
+      <form id="transfer-form">
+        
+        <div class="form-group" style="margin-bottom: 25px;">
+          <label style="text-align: center; color: var(--primary);">Jumlah Transfer (Rp)</label>
+          <input type="text" inputmode="numeric" id="amount" class="form-control amount-input" placeholder="0" required oninput="formatRupiah(this)">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label>Dari Dompet</label>
+            <select id="source_wallet_id" class="form-control" required><option value="">Pilih Asal</option></select>
+          </div>
+          <div class="form-group">
+            <label>Ke Dompet</label>
+            <select id="dest_wallet_id" class="form-control" required><option value="">Pilih Tujuan</option></select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Biaya Admin (Opsional)</label>
+          <input type="text" inputmode="numeric" id="admin_fee" class="form-control" placeholder="Cth: 2.500 atau 6.500" value="0" oninput="formatRupiah(this)">
+        </div>
+
+        <div class="form-group">
+          <label>Tanggal</label>
+          <input type="date" id="transaction_date" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label>Catatan</label>
+          <textarea id="description" class="form-control" placeholder="Cth: Pindah saldo untuk bayar tagihan..." rows="2"></textarea>
+        </div>
+
+        <button type="submit" class="btn-primary" style="width: 100%; padding: 16px; border-radius: 14px; font-size: 16px; margin-top: 15px; box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);">
+          <i class="fas fa-exchange-alt"></i> Proses Transfer
+        </button>
+
+      </form>
+    </section>
+
+    <div class="custom-modal-overlay" id="alert-modal-overlay"></div>
+    <div class="custom-modal" id="alert-modal">
+      <div class="modal-body" style="text-align: center; padding: 10px 0;">
+        <div id="alert-icon" style="font-size: 45px; color: var(--red); margin-bottom: 10px;"><i class="fas fa-times-circle"></i></div>
+        <h3 id="alert-title" style="font-size: 18px; color: var(--text-main); margin-bottom: 8px;">Gagal</h3>
+        <p id="alert-message" style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Pesan di sini</p>
+        <button onclick="closeCustomAlert()" class="btn-primary" style="width: 100%; background: var(--primary);">OK Mengerti</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/transfer.js"></script>
+
+  <script>
+    document.getElementById('transaction_date').valueAsDate = new Date();
+  </script>
+</body>
+</html>

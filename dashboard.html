@@ -6,9 +6,43 @@
   <title>Dashboard</title>
   
   <link rel="icon" type="image/png" href="assets/favicon.png">
-  
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="css/dashboard.css">
+  
+  <style>
+    /* CSS KHUSUS CAROUSEL & KARTU PERSEGI PANJANG (COMPACT) */
+    .finance-carousel {
+      display: flex;
+      overflow-x: auto;
+      gap: 12px;
+      padding-bottom: 8px;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none; /* IE & Edge */
+    }
+    .finance-carousel::-webkit-scrollbar {
+      display: none; /* Chrome, Safari, Opera */
+    }
+    .carousel-card {
+      min-width: 88%; 
+      height: 145px; /* Tinggi dikunci statis */
+      scroll-snap-align: center;
+      display: flex;
+      flex-direction: column;
+      padding: 12px 16px;
+      background: var(--card-bg);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.03);
+    }
+    .card-header-title {
+      font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; 
+      border-bottom: 1px solid var(--border); padding-bottom: 6px; 
+      display: flex; align-items: center; gap: 6px;
+    }
+    .top-spend-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f1f5f9; }
+    .top-spend-item:last-child { border-bottom: none; }
+  </style>
 </head>
 <body>
 
@@ -52,13 +86,40 @@
     </section>
 
     <section class="content-section">
-      <div class="section-header">
+      <div class="section-header" style="margin-bottom: 10px;">
         <h3>Struktur Keuangan</h3>
-      </div>
-      <div class="card chart-card">
-        <div class="chart-container">
-          <canvas id="financeChart"></canvas>
+        <div style="font-size: 10px; color: var(--text-muted); background: #f1f5f9; padding: 4px 8px; border-radius: 12px; display: flex; align-items: center; gap: 5px; font-weight: 600;">
+          <i class="fas fa-arrows-alt-h"></i> Geser
         </div>
+      </div>
+      
+      <div class="finance-carousel">
+        
+        <div class="carousel-card">
+          <h4 class="card-header-title">
+            <i class="fas fa-chart-pie text-primary"></i> Rasio Arus Kas
+          </h4>
+          <div style="position: relative; height: 90px; width: 100%; margin: auto 0;">
+            <canvas id="financeChart"></canvas>
+          </div>
+        </div>
+
+        <div class="carousel-card">
+          <h4 class="card-header-title">
+            <i class="fas fa-fire text-red"></i> Pengeluaran Terbesar
+          </h4>
+          <div id="top-spends-container" style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+            </div>
+        </div>
+
+        <div class="carousel-card">
+          <h4 class="card-header-title">
+            <i class="fas fa-wallet text-green"></i> Distribusi Dompet
+          </h4>
+          <div id="wallet-dist-container" style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+            </div>
+        </div>
+
       </div>
     </section>
 
@@ -154,6 +215,7 @@
       <div class="fab-menu" id="fab-menu">
         <a href="income.html" class="fab-action btn-income"><i class="fas fa-arrow-down"></i> Pemasukan</a>
         <a href="expense.html" class="fab-action btn-expense"><i class="fas fa-arrow-up"></i> Pengeluaran</a>
+        <a href="transfer.html" class="fab-action" style="background: var(--primary);"><i class="fas fa-exchange-alt"></i> Transfer</a>
       </div>
     </div>
 
@@ -173,7 +235,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="js/supabase.js"></script>
   <script src="js/auth.js"></script>
-  <script src="js/dashboard.js"></script> <script src="js/wallet.js"></script>
+  <script src="js/dashboard.js"></script> 
+  <script src="js/wallet.js"></script>
   <script src="js/category.js"></script>
 
   <script>
