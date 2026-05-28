@@ -1,3 +1,6 @@
+// Konfigurasi API Gemini
+const GEMINI_API_KEY = "REMOVED"; // Catatan: Sebaiknya gunakan backend/env variabel untuk production
+
 async function initTransactionForm() {
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) { window.location.href = 'login.html'; return; }
@@ -7,9 +10,188 @@ async function initTransactionForm() {
 
   await loadWallets(user.id);
   await loadCategories(user.id, transactionType);
+  
   setupFormSubmit(user.id, transactionType);
 }
 
+// ==========================================
+// FITUR VOICE TO TEXT & GEMINI AI
+// ==========================================
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition;
+
+if (SpeechRecognition) {
+  recognition = new SpeechRecognition();
+  recognition.lang = 'id-ID'; 
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = function() {
+    document.getElementById('mic-btn-large').classList.add('recording');
+    document.getElementById('instruction-text').innerHTML = "Mendengarkan...<br><span style='font-size:12px; font-weight:normal; color:#64748b;'>Silakan bicara sekarang</span>";
+  };
+
+  recognition.onresult = async function(event) {
+    const transcript = event.results[0][0].transcript;
+    document.getElementById('mic-btn-large').classList.remove('recording');
+    document.getElementById('instruction-text').style.display = 'none';
+    
+    const statusText = document.getElementById('status-text');
+    statusText.style.display = 'block';
+    statusText.innerHTML = `Terdengar: <i>"${transcript}"</i><br><br>AI Sedang Memproses... <i class="fas fa-spinner fa-spin"></i>`;
+    
+    await processWithGemini(transcript);
+  };
+
+  recognition.onerror = function(event) {
+    console.error("Speech Recognition Error:", event.error);
+    
+    let errorMsg = "Gagal mendengar suaramu.";
+    if (event.error === 'not-allowed') {
+      errorMsg = "Akses mikrofon diblokir! Izinkan di pengaturan browser.";
+    } else if (event.error === 'network') {
+      errorMsg = "Perlu koneksi internet untuk merekam suara.";
+    } else if (event.error === 'no-speech') {
+      errorMsg = "Tidak ada suara yang terdengar.";
+    }
+
+    document.getElementById('mic-btn-large').classList.remove('recording');
+    document.getElementById('instruction-text').style.display = 'block';
+    document.getElementById('status-text').style.display = 'none';
+    document.getElementById('instruction-text').innerHTML = `${errorMsg}<br><span style='font-size:12px; font-weight:normal; color:#ef4444;'>Silakan coba lagi.</span>`;
+  };
+} else {
+  alert("Maaf, browser Anda tidak mendukung fitur Voice Recognition. Silakan gunakan Google Chrome.");
+}
+
+// Kontrol Overlay UI
+function openVoiceOverlay() {
+  document.getElementById('voice-overlay').style.display = 'flex';
+  document.getElementById('instruction-text').style.display = 'block';
+  document.getElementById('instruction-text').innerHTML = "Berbicara untuk mencatat pengeluaran";
+  document.getElementById('status-text').style.display = 'none';
+}
+
+function closeVoiceOverlay() {
+  document.getElementById('voice-overlay').style.display = 'none';
+  if (recognition) recognition.stop();
+  document.getElementById('mic-btn-large').classList.remove('recording');
+}
+
+function startRecording() {
+  if (recognition) recognition.start();
+}
+
+// Proses teks ke Gemini dan Autofill Form
+// Proses teks ke Gemini dan Autofill Form
+// Proses teks ke Gemini dan Autofill Form
+async function processWithGemini(text) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+  const isIncomePage = window.location.href.includes('income');
+  const typeHint = isIncomePage ? "Pemasukan" : "Pengeluaran";
+
+  const categorySelect = document.getElementById('category_id');
+  const availableCategories = Array.from(categorySelect.options)
+    .filter(opt => opt.value !== "")
+    .map(opt => opt.text)
+    .join(", ");
+
+  const walletSelect = document.getElementById('wallet_id');
+  const availableWallets = Array.from(walletSelect.options)
+    .filter(opt => opt.value !== "")
+    .map(opt => opt.text)
+    .join(", ");
+
+  // Dapatkan tanggal hari ini sebagai patokan untuk AI (Format: YYYY-MM-DD)
+  const todayStr = new Date().toLocaleDateString('en-CA'); 
+
+  // PROMPT DINAMIS: Tambahkan instruksi untuk memproses waktu/tanggal
+  const promptText = `
+    Kamu adalah asisten keuangan pintar. Ekstrak informasi dari teks berikut ke dalam format JSON.
+    Teks Pengguna: "${text}"
+    
+    Daftar Kategori yang tersedia: [${availableCategories}]
+    Daftar Dompet yang tersedia: [${availableWallets}]
+    Tanggal Hari Ini: ${todayStr}
+    
+    Wajib kembalikan JSON dengan struktur ini saja:
+    {
+      "title": "Nama ${typeHint} singkat",
+      "amount": angka_nominal_murni,
+      "category": "Pilih SATU dari Daftar Kategori di atas. Jika tidak ada, biarkan kosong.",
+      "wallet": "Pilih SATU dari Daftar Dompet di atas. Jika tidak tahu, biarkan kosong.",
+      "date": "Tanggal transaksi dalam format YYYY-MM-DD. Hitung berdasarkan 'Tanggal Hari Ini' jika pengguna menyebutkan waktu (contoh: 'kemarin' = kurangi 1 hari, lalu kalau pengguna bilang 'tadi' itu artinya hari ini). Jika pengguna tidak menyebutkan waktu sama sekali, gunakan Tanggal Hari Ini."
+    }
+    Jika nominal tidak ditemukan, isi amount dengan 0.
+    JANGAN BERIKAN TEKS LAIN SELAIN JSON.
+  `;
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+    });
+
+    if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error.message || "Gagal menghubungi AI");
+    }
+
+    const data = await response.json();
+    let aiResponseText = data.candidates[0].content.parts[0].text;
+    
+    const jsonString = aiResponseText.replace(/```json/g, '').replace(/```/g, '').trim();
+    const aiData = JSON.parse(jsonString);
+
+    // Langsung isi form
+    fillFormWithAI(aiData);
+    closeVoiceOverlay();
+
+  } catch (error) {
+    console.error("Gemini Error:", error);
+    alert("Error AI: " + error.message);
+    document.getElementById('status-text').style.display = 'none';
+    document.getElementById('instruction-text').style.display = 'block';
+    document.getElementById('instruction-text').innerHTML = "Gagal memproses. Silakan coba lagi.";
+  }
+}
+
+// Fungsi untuk memasukkan data ke form dari hasil AI
+function fillFormWithAI(aiData) {
+  if (aiData.amount) {
+    const amountInput = document.getElementById('amount');
+    amountInput.value = aiData.amount;
+    formatRupiah(amountInput); 
+  }
+  
+  if (aiData.title) {
+    document.getElementById('title').value = aiData.title;
+  }
+
+  // ISI TANGGAL SECARA OTOMATIS
+  if (aiData.date) {
+    document.getElementById('transaction_date').value = aiData.date;
+  }
+
+  if (aiData.wallet) {
+    const walletSelect = document.getElementById('wallet_id');
+    const options = Array.from(walletSelect.options);
+    const matchedOption = options.find(opt => opt.text.toLowerCase().includes(aiData.wallet.toLowerCase()));
+    if (matchedOption) walletSelect.value = matchedOption.value;
+  }
+
+  if (aiData.category) {
+    const catSelect = document.getElementById('category_id');
+    const options = Array.from(catSelect.options);
+    const matchedOption = options.find(opt => opt.text.toLowerCase().includes(aiData.category.toLowerCase()));
+    if (matchedOption) catSelect.value = matchedOption.value;
+  }
+}
+// ==========================================
+// FUNGSI STANDAR TRANSAKSI & SUPABASE
+// ==========================================
 async function loadWallets(userId) {
   const { data } = await supabaseClient.from('wallets').select('id, name').eq('user_id', userId);
   const walletSelect = document.getElementById('wallet_id');
@@ -49,7 +231,6 @@ function setupFormSubmit(userId, transactionType) {
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
       btn.disabled = true;
 
-      // 1. Simpan Transaksi & Minta Data Kembaliannya (.select)
       const { data: txData, error: txError } = await supabaseClient.from('transactions').insert([{
         user_id: userId, title, amount, type: transactionType, transaction_date, wallet_id, category_id, description
       }]).select();
@@ -59,15 +240,11 @@ function setupFormSubmit(userId, transactionType) {
         btn.innerHTML = originalText; btn.disabled = false; return;
       }
 
-      // 2. Update Saldo Dompet
       let newBalance = transactionType === 'income' ? currentBalance + amount : currentBalance - amount;
       const { error: walletError } = await supabaseClient.from('wallets').update({ balance: newBalance }).eq('id', wallet_id);
 
-      // LOGIKA ROLLBACK (PENCEGAH PARTIAL SUCCESS)
       if (walletError) {
-        // Jika dompet gagal diupdate (koneksi putus), HAPUS transaksi yang baru saja dibuat di Langkah 1
         await supabaseClient.from('transactions').delete().eq('id', txData[0].id);
-        
         alert("Koneksi bermasalah saat memproses saldo dompet! Transaksi dibatalkan otomatis agar data tetap sinkron. Silakan coba lagi.");
         btn.innerHTML = originalText; btn.disabled = false; return;
       }
@@ -75,7 +252,6 @@ function setupFormSubmit(userId, transactionType) {
       window.location.href = 'dashboard.html';
     };
 
-    // CEK LOGIKA SALDO MINUS
     if (transactionType === 'expense' && amount > currentBalance) {
       showCustomConfirm(`Saldo dompet saat ini hanya Rp ${new Intl.NumberFormat('id-ID').format(currentBalance)}.<br>Yakin ingin mencatat pengeluaran ini dan membuat saldo menjadi minus (hutang)?`, executeTransaction);
     } else {
@@ -84,7 +260,7 @@ function setupFormSubmit(userId, transactionType) {
   });
 }
 
-// SISTEM POP-UP KHUSUS TRANSAKSI
+// Modal Konfirmasi Kustom
 let confirmCallback = null;
 function showCustomConfirm(message, callback) {
   const modalOverlay = document.getElementById('confirm-modal-overlay');
@@ -97,14 +273,17 @@ function showCustomConfirm(message, callback) {
   modalOverlay.classList.add('active');
   document.getElementById('confirm-modal').classList.add('active');
 }
+
 function closeCustomConfirm(isConfirmed) {
   document.getElementById('confirm-modal-overlay').classList.remove('active');
   document.getElementById('confirm-modal').classList.remove('active');
   if (isConfirmed && confirmCallback) confirmCallback(); 
 }
+
 function formatRupiah(input) {
   let value = input.value.replace(/[^0-9]/g, '');
   input.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
+// Jalankan Inisialisasi
 initTransactionForm();

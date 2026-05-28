@@ -31,6 +31,104 @@
       background: white !important;
     }
     .amount-input::placeholder { color: #a7f3d0; font-weight: 600; }
+
+    /* Input Group untuk menyatukan teks dan tombol mic */
+    .input-group {
+      display: flex;
+      align-items: center;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: 0.2s;
+    }
+    .input-group:focus-within {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px var(--green-light);
+      background: white;
+    }
+    .input-group input {
+      border: none;
+      background: transparent;
+      padding: 14px 16px;
+      flex: 1;
+      font-size: 14px;
+      outline: none;
+    }
+
+    /* Tombol Mic Kecil di dalam Input - Desain Baru */
+    .btn-mic-small {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+      border: none;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      margin-right: 4px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 18px;
+      box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+      transition: all 0.3s ease;
+    }
+    .btn-mic-small:hover { 
+      transform: translateY(-2px); 
+      box-shadow: 0 6px 15px rgba(59, 130, 246, 0.4); 
+    }
+    .btn-mic-small:active {
+      transform: translateY(1px);
+    }
+
+    /* OVERLAY AI RECORDER */
+    .voice-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px);
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 1000;
+    }
+
+    /* Tombol Mic Besar di Overlay - Desain Baru */
+    .mic-button-large {
+      width: 130px; height: 130px; 
+      background: linear-gradient(135deg, #60a5fa, #3b82f6);
+      border-radius: 50%;
+      display: flex; justify-content: center; align-items: center;
+      color: white; font-size: 48px; border: none; cursor: pointer;
+      box-shadow: 0 12px 35px rgba(59, 130, 246, 0.35), inset 0 -4px 10px rgba(0,0,0,0.1);
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+    }
+    .mic-button-large:hover {
+      transform: scale(1.05);
+    }
+    .mic-button-large::before { 
+      content: '';
+      position: absolute;
+      top: -15px; left: -15px; right: -15px; bottom: -15px;
+      border: 2px dashed #93c5fd;
+      border-radius: 50%;
+      animation: spin 10s linear infinite;
+      opacity: 0.5;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    /* Animasi Recording Diperhalus (Menggunakan warna biru/standar rekaman karena ini bisa untuk income) */
+    .mic-button-large.recording { 
+      background: linear-gradient(135deg, #f87171, #ef4444); 
+      box-shadow: 0 12px 35px rgba(239, 68, 68, 0.4);
+      animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; 
+    }
+    .mic-button-large.recording::before {
+      border-color: #fca5a5;
+      animation: spin 5s linear infinite; 
+    }
+    @keyframes pulse-ring { 
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); } 
+      50% { transform: scale(1.05); box-shadow: 0 0 0 25px rgba(239, 68, 68, 0); } 
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } 
+    }
   </style>
 </head>
 <body>
@@ -52,7 +150,12 @@
 
         <div class="form-group">
           <label>Judul Transaksi</label>
-          <input type="text" id="title" class="form-control" placeholder="Cth: Gaji Bulanan, Jual Barang" required>
+          <div class="input-group">
+            <input type="text" id="title" placeholder="Cth: Gaji Bulanan, Jual Barang" required>
+            <button type="button" class="btn-mic-small" onclick="openVoiceOverlay()" title="Catat dengan Suara">
+              <i class="fas fa-microphone"></i>
+            </button>
+          </div>
         </div>
 
         <div class="form-group">
@@ -83,6 +186,17 @@
       </form>
     </section>
 
+    <div class="voice-overlay" id="voice-overlay">
+      <button class="mic-button-large" id="mic-btn-large" onclick="startRecording()">
+        <i class="fas fa-microphone"></i>
+      </button>
+      <p id="instruction-text" style="font-size: 15px; font-weight: 700; color: var(--text-main); margin-top: 30px; text-align: center;">Berbicara untuk mencatat transaksi</p>
+      <p id="status-text" style="font-size: 13px; color: var(--primary); font-weight: 600; text-align: center; display: none; padding: 0 20px;"></p>
+      <button type="button" onclick="closeVoiceOverlay()" style="margin-top: 40px; background: #e2e8f0; color: var(--text-main); font-weight: 700; font-size: 14px; padding: 12px 24px; border-radius: 12px; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-keyboard"></i> Ketik Manual
+      </button>
+    </div>
+
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -91,7 +205,6 @@
   <script src="js/transaction.js"></script>
 
   <script>
-    // Set default tanggal hari ini saat form dibuka
     document.getElementById('transaction_date').valueAsDate = new Date();
   </script>
 </body>
