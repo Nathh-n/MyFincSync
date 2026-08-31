@@ -153,3 +153,77 @@ async function logout() {
   await supabaseClient.auth.signOut();
   window.location.href = 'login.html';
 }
+
+// ============================
+// LUPA PASSWORD (Send Reset Email)
+// ============================
+const forgotPasswordForm = document.getElementById('forgot-password-form');
+
+if (forgotPasswordForm) {
+  forgotPasswordForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const email = document.getElementById('forgot_email').value;
+
+    const btn = forgotPasswordForm.querySelector('button[type="submit"]');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
+    btn.disabled = true;
+
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://myfinsync.netlify.app/reset-password.html'
+    });
+
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+
+    if (error) {
+      showAuthAlert("Gagal", "Tidak dapat mengirim email reset. Silakan coba lagi nanti.", "error");
+      return;
+    }
+
+    // Pesan netral agar aman dari user enumeration
+    showAuthAlert("Cek Email Kamu", "Jika email terdaftar, link reset password sudah dikirim. Jangan lupa cek folder spam.", "success");
+  });
+}
+
+// ============================
+// GANTI PASSWORD (dari link email)
+// ============================
+const resetPasswordForm = document.getElementById('reset-password-form');
+
+if (resetPasswordForm) {
+  resetPasswordForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const newPassword = document.getElementById('new_password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+
+    if (newPassword.length < 6) {
+      showAuthAlert("Peringatan", "Password harus minimal 6 karakter!", "error");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      showAuthAlert("Peringatan", "Konfirmasi password tidak cocok!", "error");
+      return;
+    }
+
+    const btn = resetPasswordForm.querySelector('button[type="submit"]');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+    btn.disabled = true;
+
+    const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+
+    if (error) {
+      showAuthAlert("Gagal", error.message, "error");
+      return;
+    }
+
+    showAuthAlert("Berhasil", "Password berhasil diubah. Silakan login dengan password baru.", "success", "login.html");
+  });
+}
