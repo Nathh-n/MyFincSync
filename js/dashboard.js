@@ -302,5 +302,13 @@ function closeCustomConfirm(isConfirmed) {
 }
 function formatRupiah(input) { let value = input.value.replace(/[^0-9]/g, ''); input.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, "."); }
 
+async function loadUserName() {
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  if (!user) return;
+  const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Dashboard';
+  document.getElementById('user-name').innerText = name;
+}
+
+loadUserName();
 loadSummary();
 loadRecentTransactions();

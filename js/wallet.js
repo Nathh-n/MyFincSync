@@ -17,7 +17,9 @@ if (walletForm) {
 
     if (error) { showCustomAlert('Gagal Menyimpan', error.message, 'error'); return; }
     showCustomAlert('Berhasil!', 'Dompet baru ditambahkan.', 'success');
-    walletForm.reset(); getWallets(); 
+    walletForm.reset(); getWallets();
+    loadSummary(); // Refresh dashboard data
+    loadRecentTransactions();
   });
 }
 
@@ -31,6 +33,12 @@ async function getWallets() {
 function renderWallets(wallets) {
   const walletContainer = document.getElementById('wallet-container');
   walletContainer.innerHTML = '';
+
+  if (!wallets || wallets.length === 0) {
+    walletContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px; border: 1px dashed var(--border); border-radius: 12px;">Belum ada dompet. Tambahkan dompet pertama di atas.</p>';
+    return;
+  }
+
   wallets.forEach((wallet) => {
     const formattedBalance = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(wallet.balance);
     walletContainer.innerHTML += `

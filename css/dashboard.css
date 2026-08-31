@@ -142,6 +142,7 @@ body {
 
 .badge-card { 
   flex: 1; 
+  min-width: 0;
   background: rgba(255, 255, 255, 0.15); 
   backdrop-filter: blur(10px); 
   padding: 12px; 
@@ -150,6 +151,7 @@ body {
   align-items: center; 
   gap: 10px; 
   text-align: left; 
+  overflow: hidden;
 }
 
 .badge-card p { 
@@ -159,9 +161,17 @@ body {
 }
 
 .badge-card h4 { 
-  font-size: 14px; 
+  font-size: clamp(11px, 3.6vw, 14px); 
   font-weight: 600; 
   color: white !important; 
+  white-space: nowrap; 
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+}
+
+.badge-card > div:not(.icon-box) { 
+  min-width: 0; 
+  overflow: hidden; 
 }
 
 .icon-box { 

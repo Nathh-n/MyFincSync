@@ -43,6 +43,13 @@ function renderCategories(categories) {
     if (category.type === 'income' && incomeContainer) incomeContainer.innerHTML += categoryHTML;
     else if (category.type === 'expense' && expenseContainer) expenseContainer.innerHTML += categoryHTML;
   });
+
+  if (incomeContainer && incomeContainer.innerHTML === '') {
+    incomeContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 10px; border: 1px dashed var(--border); border-radius: 8px;">Belum ada kategori pemasukan.</p>';
+  }
+  if (expenseContainer && expenseContainer.innerHTML === '') {
+    expenseContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 10px; border: 1px dashed var(--border); border-radius: 8px;">Belum ada kategori pengeluaran.</p>';
+  }
 }
 
 function deleteCategory(id) {

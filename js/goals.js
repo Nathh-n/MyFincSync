@@ -44,8 +44,11 @@ function renderGoals() {
   }
 
   goals.forEach(goal => {
-    let percentage = (goal.current / goal.target) * 100;
-    if (percentage > 100) percentage = 100; 
+    let percentage = 0;
+    if (goal.target > 0) {
+      percentage = (goal.current / goal.target) * 100;
+      if (percentage > 100) percentage = 100;
+    }
 
     const isCompleted = percentage === 100;
     const barColor = isCompleted ? 'var(--green)' : '#0ea5e9'; 
@@ -105,6 +108,10 @@ document.getElementById('goal-form').addEventListener('submit', async (e) => {
   const name = document.getElementById('goal_name').value;
   const target = parseInt(document.getElementById('goal_target').value.replace(/\./g, ''));
   let current = parseInt(document.getElementById('goal_current').value.replace(/\./g, '')) || 0;
+
+  if (!target || target <= 0) {
+    showCustomAlert("Peringatan", "Target nominal harus lebih dari 0!", "error"); return;
+  }
 
   if (current > target) {
     showCustomAlert("Peringatan", "Uang terkumpul tidak boleh lebih dari target nominal!", "error"); return;

@@ -68,7 +68,8 @@ if (SpeechRecognition) {
 function openVoiceOverlay() {
   document.getElementById('voice-overlay').style.display = 'flex';
   document.getElementById('instruction-text').style.display = 'block';
-  document.getElementById('instruction-text').innerHTML = "Berbicara untuk mencatat pengeluaran";
+  const isIncomePage = window.location.href.includes('income');
+  document.getElementById('instruction-text').innerHTML = isIncomePage ? "Berbicara untuk mencatat pemasukan" : "Berbicara untuk mencatat pengeluaran";
   document.getElementById('status-text').style.display = 'none';
 }
 
@@ -217,6 +218,10 @@ function setupFormSubmit(userId, transactionType) {
     const title = document.getElementById('title').value;
     const amountStr = document.getElementById('amount').value.replace(/\./g, '');
     const amount = parseInt(amountStr);
+
+    if (!amount || amount <= 0) {
+      alert("Masukkan nominal yang valid!"); return;
+    }
     const transaction_date = document.getElementById('transaction_date').value;
     const wallet_id = document.getElementById('wallet_id').value;
     const category_id = document.getElementById('category_id').value;

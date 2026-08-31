@@ -42,7 +42,8 @@ document.getElementById('planner-form').addEventListener('submit', async (e) => 
   const amountStr = document.getElementById('plan_amount').value.replace(/\./g, '');
   const amount = parseInt(amountStr);
   const freq = freqSelect.value;
-  const customDays = parseInt(customDaysInput.value) || null;
+  const customDaysRaw = parseInt(customDaysInput.value);
+  const customDays = (customDaysRaw && customDaysRaw > 0) ? customDaysRaw : null;
 
   const btn = e.target.querySelector('button[type="submit"]');
   const originalText = btn.innerHTML;
@@ -98,8 +99,13 @@ function renderPlans() {
         monthlyEquivalent = planAmount;
         formulaText = `Tetap bulanan`;
       } else if (plan.freq === 'custom') {
-        monthlyEquivalent = (planAmount / plan.custom_days) * 30;
-        formulaText = `(Rp ${formatRp(planAmount).replace('Rp','').trim()} / ${plan.custom_days} Hari) x 30 Hari`;
+        if (plan.custom_days && plan.custom_days > 0) {
+          monthlyEquivalent = (planAmount / plan.custom_days) * 30;
+          formulaText = `(Rp ${formatRp(planAmount).replace('Rp','').trim()} / ${plan.custom_days} Hari) x 30 Hari`;
+        } else {
+          monthlyEquivalent = planAmount;
+          formulaText = `Periode custom belum diatur`;
+        }
       }
 
       totalMonthlyTarget += monthlyEquivalent;

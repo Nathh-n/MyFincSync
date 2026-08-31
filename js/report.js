@@ -87,14 +87,13 @@ async function loadReport() {
     .order('transaction_date', { ascending: false })
     .order('created_at', { ascending: false });
 
-  if (error) { console.error("Error:", error.message); return; }
+  if (error) { console.error("Error:", error.message); showCustomAlert("Gagal Memuat", "Gagal memuat data laporan: " + error.message, "error"); return; }
 
   currentTransactions = transactions;
   currentRange = { start, end };
   currentPage = 1; 
 
   renderReportSummary();
-  populateFilterDropdowns();
   applyFilters();
 }
 
@@ -303,7 +302,7 @@ function csvEscape(value) {
 
 function exportCSV() {
   if (filteredTransactions.length === 0) {
-    showCustomAlert("Info", "Tidak ada data yang bisa diexport.", "error");
+    showCustomAlert("Info", "Tidak ada data yang bisa diexport.", "info");
     return;
   }
 
@@ -487,6 +486,7 @@ function showCustomAlert(title, message, type = 'success') {
   document.getElementById('alert-message').innerText = message;
   const iconEl = document.getElementById('alert-icon');
   if(type === 'success') { iconEl.innerHTML = '<i class="fas fa-check-circle"></i>'; iconEl.style.color = '#16a34a'; }
+  else if(type === 'info') { iconEl.innerHTML = '<i class="fas fa-info-circle"></i>'; iconEl.style.color = '#3b82f6'; }
   else { iconEl.innerHTML = '<i class="fas fa-times-circle"></i>'; iconEl.style.color = '#dc2626'; }
   document.getElementById('alert-modal-overlay').classList.add('active');
   document.getElementById('alert-modal').classList.add('active');
@@ -556,5 +556,8 @@ if (filterCat) filterCat.addEventListener('change', applyFilters);
 const filterWallet = document.getElementById('filter-wallet');
 if (filterWallet) filterWallet.addEventListener('change', applyFilters);
 
-loadReport();
-loadEditOptions();
+async function init() {
+  await loadEditOptions();
+  loadReport();
+}
+init();
