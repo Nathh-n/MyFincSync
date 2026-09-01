@@ -204,6 +204,13 @@ function formatRupiah(input) {
   input.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
+function escapeHTML(str) {
+  if (str === null || str === undefined) return '';
+  const div = document.createElement('div');
+  div.appendChild(document.createTextNode(String(str)));
+  return div.innerHTML;
+}
+
 // =========================
 // KELOLA DOMPET (dari Profile)
 // =========================
@@ -236,7 +243,7 @@ function renderManageWallets(wallets) {
     container.innerHTML += `
       <div class="manage-item">
         <div>
-          <h4>${wallet.name}</h4>
+          <h4>${escapeHTML(wallet.name)}</h4>
           <p class="manage-amount">${formatRp(wallet.balance)}</p>
         </div>
         <button class="btn-delete-small" onclick="deleteManageWallet('${wallet.id}')">
@@ -285,7 +292,7 @@ function renderManageCategories(categories) {
   categories.forEach(category => {
     const html = `
       <div class="category-item">
-        <span>${category.name}</span>
+        <span>${escapeHTML(category.name)}</span>
         <button onclick="deleteManageCategory('${category.id}')" title="Hapus Kategori"><i class="fas fa-times"></i></button>
       </div>
     `;

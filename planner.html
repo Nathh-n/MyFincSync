@@ -223,27 +223,13 @@
       <div id="tab-target" class="hidden">
 
         <section class="content-section" style="margin-top: 15px;">
-          <div class="section-header">
-            <h3>Buat Target Baru</h3>
-          </div>
-          <div class="card form-card">
-            <form id="goal-form" class="inline-form">
-              <input type="text" id="goal_name" placeholder="Nama Impian (Cth: HP Baru)" required>
-              <input type="text" inputmode="numeric" id="goal_target" placeholder="Target Nominal (Rp)" required oninput="formatRupiah(this)">
-              <input type="text" inputmode="numeric" id="goal_current" placeholder="Uang Terkumpul Saat Ini (Rp)" value="0" oninput="formatRupiah(this)">
-              
-              <button type="submit" class="btn-primary" style="background: var(--primary); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
-                <i class="fas fa-bullseye"></i> Mulai Menabung
-              </button>
-            </form>
-          </div>
-        </section>
-
-        <section class="content-section">
-          <div class="section-header">
-            <h3>Daftar Impian & Progress</h3>
-          </div>
-          <div class="goals-wrapper" id="goals-container">
+          <div class="card" style="text-align: center; padding: 30px 20px;">
+            <div style="font-size: 50px; color: var(--primary); margin-bottom: 12px;"><i class="fas fa-bullseye"></i></div>
+            <h3 style="font-size: 17px; color: var(--text-main); margin-bottom: 8px;">Kelola Target Tabungan</h3>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Buat impian, pantau progres, dan kelola tabunganmu di halaman Target Tabungan khusus.</p>
+            <button onclick="window.location.href='goals.html'" class="btn-primary" style="background: var(--primary); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+              <i class="fas fa-bullseye"></i> Buka Target Tabungan
+            </button>
           </div>
         </section>
 

@@ -54,6 +54,9 @@ function setupFormSubmit(userId) {
       showCustomAlert("Gagal", `Saldo dompet asal tidak cukup! Total yang ditarik (termasuk admin) adalah Rp ${new Intl.NumberFormat('id-ID').format(totalDeduction)}.`, "error"); return;
     }
 
+    const confirmMessage = `Yakin ingin mentransfer <b>Rp ${new Intl.NumberFormat('id-ID').format(amount)}</b> dari <b>${sourceName}</b> ke <b>${destName}</b>?${adminFee > 0 ? `<br>Biaya admin: <b>Rp ${new Intl.NumberFormat('id-ID').format(adminFee)}</b>` : ''}`;
+
+    showCustomConfirm(confirmMessage, async () => {
     const btn = form.querySelector('button[type="submit"]');
     const originalText = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
@@ -96,6 +99,7 @@ function setupFormSubmit(userId) {
     await supabaseClient.from('transactions').insert(txRecords);
 
     window.location.href = 'dashboard.html';
+    });
   });
 }
 
@@ -107,6 +111,23 @@ function showCustomAlert(title, message, type = 'success') {
   document.getElementById('alert-modal-overlay').classList.add('active'); document.getElementById('alert-modal').classList.add('active');
 }
 function closeCustomAlert() { document.getElementById('alert-modal-overlay').classList.remove('active'); document.getElementById('alert-modal').classList.remove('active'); }
+let confirmCallback = null;
+function showCustomConfirm(message, callback) {
+  const modalOverlay = document.getElementById('confirm-modal-overlay');
+  if(!modalOverlay) {
+    if(confirm(message.replace(/<br>/g, "\n"))) callback(); 
+    return;
+  }
+  document.getElementById('confirm-message').innerHTML = message;
+  confirmCallback = callback;
+  modalOverlay.classList.add('active');
+  document.getElementById('confirm-modal').classList.add('active');
+}
+function closeCustomConfirm(isConfirmed) {
+  document.getElementById('confirm-modal-overlay').classList.remove('active');
+  document.getElementById('confirm-modal').classList.remove('active');
+  if (isConfirmed && confirmCallback) confirmCallback(); 
+}
 function formatRupiah(input) { let value = input.value.replace(/[^0-9]/g, ''); input.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, "."); }
 
 initTransferForm();

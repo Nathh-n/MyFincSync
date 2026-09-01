@@ -34,8 +34,16 @@ function formatRupiah(input) {
   input.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
+function escapeHTML(str) {
+  if (str === null || str === undefined) return '';
+  const div = document.createElement('div');
+  div.appendChild(document.createTextNode(String(str)));
+  return div.innerHTML;
+}
+
 function renderGoals() {
   const container = document.getElementById('goals-container');
+  if (!container) return;
   container.innerHTML = '';
 
   if (goals.length === 0) {
@@ -81,7 +89,7 @@ function renderGoals() {
     const html = `
       <div class="card" style="border: 1px solid var(--border);">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-          <h3 style="font-size: 15px; color: var(--text-main); font-weight: 600;">${goal.name}</h3>
+          <h3 style="font-size: 15px; color: var(--text-main); font-weight: 600;">${escapeHTML(goal.name)}</h3>
           <span style="font-size: 12px; color: var(--text-muted); font-weight: 500;">${formatRp(goal.current)} / ${formatRp(goal.target)}</span>
         </div>
         
@@ -103,29 +111,32 @@ function renderGoals() {
   });
 }
 
-document.getElementById('goal-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const name = document.getElementById('goal_name').value;
-  const target = parseInt(document.getElementById('goal_target').value.replace(/\./g, ''));
-  let current = parseInt(document.getElementById('goal_current').value.replace(/\./g, '')) || 0;
+const goalFormEl = document.getElementById('goal-form');
+if (goalFormEl) {
+  goalFormEl.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('goal_name').value;
+    const target = parseInt(document.getElementById('goal_target').value.replace(/\./g, ''));
+    let current = parseInt(document.getElementById('goal_current').value.replace(/\./g, '')) || 0;
 
-  if (!target || target <= 0) {
-    showCustomAlert("Peringatan", "Target nominal harus lebih dari 0!", "error"); return;
-  }
+    if (!target || target <= 0) {
+      showCustomAlert("Peringatan", "Target nominal harus lebih dari 0!", "error"); return;
+    }
 
-  if (current > target) {
-    showCustomAlert("Peringatan", "Uang terkumpul tidak boleh lebih dari target nominal!", "error"); return;
-  }
+    if (current > target) {
+      showCustomAlert("Peringatan", "Uang terkumpul tidak boleh lebih dari target nominal!", "error"); return;
+    }
 
-  const btn = e.target.querySelector('button[type="submit"]');
-  const originalText = btn.innerHTML;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...'; btn.disabled = true;
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...'; btn.disabled = true;
 
-  const { error } = await supabaseClient.from('savings_goals').insert([{ user_id: currentUserId, name, target, current }]);
-  if (error) { showCustomAlert("Gagal", error.message, "error"); } 
-  else { e.target.reset(); document.getElementById('goal_current').value = '0'; showCustomAlert("Berhasil", "Target baru dibuat.", "success"); await initGoals(); }
-  btn.innerHTML = originalText; btn.disabled = false;
-});
+    const { error } = await supabaseClient.from('savings_goals').insert([{ user_id: currentUserId, name, target, current }]);
+    if (error) { showCustomAlert("Gagal", error.message, "error"); } 
+    else { e.target.reset(); document.getElementById('goal_current').value = '0'; showCustomAlert("Berhasil", "Target baru dibuat.", "success"); await initGoals(); }
+    btn.innerHTML = originalText; btn.disabled = false;
+  });
+}
 
 function setupCustomDropdown(wrapperId, triggerId, textId, optionsId, inputId, dataList) {
   const wrapper = document.getElementById(wrapperId);
@@ -157,7 +168,7 @@ function setupCustomDropdown(wrapperId, triggerId, textId, optionsId, inputId, d
     const formattedBalance = new Intl.NumberFormat('id-ID').format(wallet.balance);
     const optionEl = document.createElement('div');
     optionEl.className = 'custom-option';
-    optionEl.innerHTML = `<span style="font-weight: 600;">${wallet.name}</span><span style="font-size: 12px; color: var(--text-muted);">Rp ${formattedBalance}</span>`;
+    optionEl.innerHTML = `<span style="font-weight: 600;">${escapeHTML(wallet.name)}</span><span style="font-size: 12px; color: var(--text-muted);">Rp ${formattedBalance}</span>`;
     
     optionEl.addEventListener('click', () => {
       hiddenInput.value = wallet.id;
@@ -245,9 +256,10 @@ function closeActionModals() {
 }
 
 document.getElementById('confirm-nominal-btn').addEventListener('click', async () => {
-  const walletId = document.getElementById('nominal_wallet_id').value;
+  const walletEl = document.getElementById('nominal_wallet_id');
+  const walletId = walletEl.value;
   const amount = parseInt(document.getElementById('nominal_amount').value.replace(/\./g, ''));
-  const currentWalletBalance = parseInt(document.getElementById('nominal_wallet_id').getAttribute('data-balance'));
+  const currentWalletBalance = parseInt(walletEl.getAttribute('data-balance')) || 0;
 
   if (!walletId) { showCustomAlert("Peringatan", "Pilih dompet terlebih dahulu!", "error"); return; }
   if (isNaN(amount) || amount <= 0) { showCustomAlert("Peringatan", "Masukkan nominal yang valid!", "error"); return; }
@@ -296,8 +308,9 @@ document.getElementById('confirm-nominal-btn').addEventListener('click', async (
 });
 
 document.getElementById('confirm-full-btn').addEventListener('click', async () => {
-  const walletId = document.getElementById('full_wallet_id').value;
-  const currentWalletBalance = parseInt(document.getElementById('full_wallet_id').getAttribute('data-balance'));
+  const walletEl = document.getElementById('full_wallet_id');
+  const walletId = walletEl.value;
+  const currentWalletBalance = parseInt(walletEl.getAttribute('data-balance')) || 0;
 
   if (!walletId) { showCustomAlert("Peringatan", "Pilih dompet penerima dana terlebih dahulu!", "error"); return; }
 

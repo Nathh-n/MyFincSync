@@ -189,7 +189,7 @@ function renderTransactionPage() {
        savingsBadgeHTML = `<span class="savings-badge"><i class="fas fa-bullseye"></i> Alokasi</span>`;
     }
     
-    const descHTML = trx.description ? `<p class="trx-desc"><i class="fas fa-comment-dots"></i> ${trx.description}</p>` : '';
+    const descHTML = trx.description ? `<p class="trx-desc"><i class="fas fa-comment-dots"></i> ${escapeHTML(trx.description)}</p>` : '';
 
     const editBtnHTML = trx.type === 'transfer' ? ''
       : `<button onclick="openEditModal('${trx.id}')" class="btn-edit-action"><i class="fas fa-pen"></i> Edit</button>`;
@@ -198,8 +198,8 @@ function renderTransactionPage() {
       <div class="transaction-item">
         <div class="trx-header-row">
           <div class="transaction-detail">
-            <h4>${trx.title}${savingsBadgeHTML}</h4>
-            <p class="trx-meta">${formattedDate} • <b>${categoryName}</b> • ${walletName}</p>
+            <h4>${escapeHTML(trx.title)}${savingsBadgeHTML}</h4>
+            <p class="trx-meta">${formattedDate} • <b>${escapeHTML(categoryName)}</b> • ${escapeHTML(walletName)}</p>
           </div>
           <div class="trx-right">
             <div class="trx-amount-rendered ${amountColor}">
@@ -339,6 +339,13 @@ function exportCSV() {
 function formatRupiah(input) {
   let value = input.value.replace(/[^0-9]/g, '');
   input.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+function escapeHTML(str) {
+  if (str === null || str === undefined) return '';
+  const div = document.createElement('div');
+  div.appendChild(document.createTextNode(String(str)));
+  return div.innerHTML;
 }
 
 async function loadEditOptions() {

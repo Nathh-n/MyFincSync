@@ -87,6 +87,19 @@
       </div>
     </div>
 
+    <div class="custom-modal-overlay" id="confirm-modal-overlay"></div>
+    <div class="custom-modal" id="confirm-modal">
+      <div class="modal-body" style="text-align: center; padding: 10px 0;">
+        <div style="font-size: 45px; color: var(--primary); margin-bottom: 10px;"><i class="fas fa-exchange-alt"></i></div>
+        <h3 style="font-size: 18px; color: var(--text-main); margin-bottom: 8px;">Konfirmasi Transfer</h3>
+        <p id="confirm-message" style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Pesan konfirmasi</p>
+        <div style="display: flex; gap: 10px;">
+          <button onclick="closeCustomConfirm(false)" style="flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; background: #f1f5f9; color: var(--text-muted);">Batal</button>
+          <button onclick="closeCustomConfirm(true)" style="flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">Ya, Lanjutkan</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

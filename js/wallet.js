@@ -55,6 +55,13 @@ function setWalletSort(mode, chip) {
   renderWallets(sortWallets(currentWallets));
 }
 
+function escapeHTML(str) {
+  if (str === null || str === undefined) return '';
+  const div = document.createElement('div');
+  div.appendChild(document.createTextNode(String(str)));
+  return div.innerHTML;
+}
+
 function renderWallets(wallets) {
   const walletContainer = document.getElementById('wallet-container');
   walletContainer.innerHTML = '';
@@ -68,7 +75,7 @@ function renderWallets(wallets) {
     const formattedBalance = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(wallet.balance);
     walletContainer.innerHTML += `
       <div class="wallet-card">
-        <div class="wallet-info"><h3>${wallet.name}</h3><p>${formattedBalance}</p></div>
+        <div class="wallet-info"><h3>${escapeHTML(wallet.name)}</h3><p>${formattedBalance}</p></div>
       </div>
     `;
   });

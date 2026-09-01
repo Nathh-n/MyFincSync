@@ -1,12 +1,19 @@
 let plans = [];
 
+function escapeHTML(str) {
+  if (str === null || str === undefined) return '';
+  const div = document.createElement('div');
+  div.appendChild(document.createTextNode(String(str)));
+  return div.innerHTML;
+}
+
 async function initPlanner() {
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) {
     window.location.href = 'login.html';
     return;
   }
-  currentUserId = user.id;
+  const currentUserId = user.id;
   const { data, error } = await supabaseClient
     .from('budget_plans')
     .select('*')
@@ -111,7 +118,7 @@ function renderPlans() {
       const html = `
         <div class="transaction-item" style="align-items: flex-start;">
           <div class="transaction-detail">
-            <h4>${plan.name}</h4>
+            <h4>${escapeHTML(plan.name)}</h4>
             <p>${formulaText}</p>
           </div>
           <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">

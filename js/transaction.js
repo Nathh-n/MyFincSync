@@ -1,5 +1,6 @@
-// Konfigurasi API Gemini
-const GEMINI_API_KEY = "REMOVED"; // Catatan: Sebaiknya gunakan backend/env variabel untuk production
+// Konfigurasi AI Gemini via Supabase Edge Function
+// API key disimpan di server (supabase secrets), tidak terekspos ke client.
+// Deploy: cd supabase && supabase functions deploy gemini-proxy --project-ref sxcyygkxjysadsmyhijg
 
 async function initTransactionForm() {
   const { data: { user } } = await supabaseClient.auth.getUser();
@@ -38,7 +39,7 @@ if (SpeechRecognition) {
     
     const statusText = document.getElementById('status-text');
     statusText.style.display = 'block';
-    statusText.innerHTML = `Terdengar: <i>"${transcript}"</i><br><br>AI Sedang Memproses... <i class="fas fa-spinner fa-spin"></i>`;
+    statusText.innerHTML = `Terdengar: <i>"${escapeHTML(transcript)}"</i><br><br>AI Sedang Memproses... <i class="fas fa-spinner fa-spin"></i>`;
     
     await processWithGemini(transcript);
   };
@@ -64,6 +65,13 @@ if (SpeechRecognition) {
   alert("Maaf, browser Anda tidak mendukung fitur Voice Recognition. Silakan gunakan Google Chrome.");
 }
 
+function escapeHTML(str) {
+  if (str === null || str === undefined) return '';
+  const div = document.createElement('div');
+  div.appendChild(document.createTextNode(String(str)));
+  return div.innerHTML;
+}
+
 // Kontrol Overlay UI
 function openVoiceOverlay() {
   document.getElementById('voice-overlay').style.display = 'flex';
@@ -87,7 +95,6 @@ function startRecording() {
 // Proses teks ke Gemini dan Autofill Form
 // Proses teks ke Gemini dan Autofill Form
 async function processWithGemini(text) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
   const isIncomePage = window.location.href.includes('income');
   const typeHint = isIncomePage ? "Pemasukan" : "Pengeluaran";
@@ -129,18 +136,15 @@ async function processWithGemini(text) {
   `;
 
   try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+    const response = await supabaseClient.functions.invoke('gemini-proxy', {
+      body: { text: promptText }
     });
 
-    if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.error.message || "Gagal menghubungi AI");
+    if (response.error) {
+      throw new Error(response.error.message || "Fitur AI belum aktif. Deploy Edge Function 'gemini-proxy'.");
     }
 
-    const data = await response.json();
+    const data = response.data;
     let aiResponseText = data.candidates[0].content.parts[0].text;
     
     const jsonString = aiResponseText.replace(/```json/g, '').replace(/```/g, '').trim();

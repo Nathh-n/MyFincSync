@@ -183,7 +183,7 @@ function renderTopSpends() {
       <div class="top-spend-item">
         <div style="display:flex; align-items:center; gap:8px;">
           <div style="background:var(--red-light); color:var(--red); width:20px; height:20px; border-radius:6px; display:flex; justify-content:center; align-items:center; font-size:10px; font-weight:bold;">${index+1}</div>
-          <span style="font-size:12px; font-weight:600; color:var(--text-main);">${item.name}</span>
+          <span style="font-size:12px; font-weight:600; color:var(--text-main);">${escapeHTML(item.name)}</span>
         </div>
         <span style="font-size:12px; font-weight:700; color:var(--red);">${displayAmount}</span>
       </div>
@@ -217,7 +217,7 @@ function renderWalletDistribution() {
     html += `
       <div style="margin-bottom: 6px;">
         <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px;">
-          <span style="font-weight:600; color:var(--text-main);">${w.name}</span>
+          <span style="font-weight:600; color:var(--text-main);">${escapeHTML(w.name)}</span>
           <span style="color:var(--text-muted);">${displayAmount} <b style="color:var(--green);">(${percentage.toFixed(1)}%)</b></span>
         </div>
         <div style="background:#f1f5f9; border-radius:4px; height:6px; width:100%; overflow:hidden;">
@@ -272,8 +272,8 @@ async function loadRecentTransactions() {
     transactionList.innerHTML += `
       <div class="transaction-item" style="align-items: center;">
         <div class="transaction-detail">
-          <h4>${trx.title}</h4>
-          <p>${formattedDate} • ${categoryName} • ${walletName}</p>
+          <h4>${escapeHTML(trx.title)}</h4>
+          <p>${formattedDate} • ${escapeHTML(categoryName)} • ${escapeHTML(walletName)}</p>
         </div>
         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
           <div class="transaction-amount ${amountColor}" ${transferStyle}>
@@ -284,6 +284,13 @@ async function loadRecentTransactions() {
       </div>
     `;
   });
+}
+
+function escapeHTML(str) {
+  if (str === null || str === undefined) return '';
+  const div = document.createElement('div');
+  div.appendChild(document.createTextNode(String(str)));
+  return div.innerHTML;
 }
 
 function toggleHistory() {
