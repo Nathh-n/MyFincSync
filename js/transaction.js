@@ -65,13 +65,6 @@ if (SpeechRecognition) {
   alert("Maaf, browser Anda tidak mendukung fitur Voice Recognition. Silakan gunakan Google Chrome.");
 }
 
-function escapeHTML(str) {
-  if (str === null || str === undefined) return '';
-  const div = document.createElement('div');
-  div.appendChild(document.createTextNode(String(str)));
-  return div.innerHTML;
-}
-
 // Kontrol Overlay UI
 function openVoiceOverlay() {
   document.getElementById('voice-overlay').style.display = 'flex';
@@ -221,7 +214,7 @@ function setupFormSubmit(userId, transactionType) {
 
     const title = document.getElementById('title').value;
     const amountStr = document.getElementById('amount').value.replace(/\./g, '');
-    const amount = parseInt(amountStr);
+    const amount = Number(amountStr);
 
     if (!amount || amount <= 0) {
       alert("Masukkan nominal yang valid!"); return;
@@ -232,7 +225,7 @@ function setupFormSubmit(userId, transactionType) {
     const description = document.getElementById('description').value;
 
     const { data: walletData } = await supabaseClient.from('wallets').select('balance').eq('id', wallet_id).single();
-    let currentBalance = walletData ? parseInt(walletData.balance) || 0 : 0;
+    let currentBalance = walletData ? Number(walletData.balance) || 0 : 0;
 
     const executeTransaction = async () => {
       const btn = form.querySelector('button[type="submit"]');
@@ -267,31 +260,6 @@ function setupFormSubmit(userId, transactionType) {
       executeTransaction();
     }
   });
-}
-
-// Modal Konfirmasi Kustom
-let confirmCallback = null;
-function showCustomConfirm(message, callback) {
-  const modalOverlay = document.getElementById('confirm-modal-overlay');
-  if(!modalOverlay) {
-    if(confirm(message.replace(/<br>/g, "\n"))) callback(); 
-    return;
-  }
-  document.getElementById('confirm-message').innerHTML = message;
-  confirmCallback = callback;
-  modalOverlay.classList.add('active');
-  document.getElementById('confirm-modal').classList.add('active');
-}
-
-function closeCustomConfirm(isConfirmed) {
-  document.getElementById('confirm-modal-overlay').classList.remove('active');
-  document.getElementById('confirm-modal').classList.remove('active');
-  if (isConfirmed && confirmCallback) confirmCallback(); 
-}
-
-function formatRupiah(input) {
-  let value = input.value.replace(/[^0-9]/g, '');
-  input.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
 // Jalankan Inisialisasi

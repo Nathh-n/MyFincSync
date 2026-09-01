@@ -7,6 +7,7 @@ let selectedGoalId = null;
 let tempGoalData = {};
 
 async function initGoals() {
+  showGlobalLoading();
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) {
     window.location.href = 'login.html';
@@ -24,21 +25,7 @@ async function initGoals() {
     goals = data;
     renderGoals();
   }
-}
-
-const formatRp = (num) => {
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
-};
-function formatRupiah(input) {
-  let value = input.value.replace(/[^0-9]/g, '');
-  input.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-}
-
-function escapeHTML(str) {
-  if (str === null || str === undefined) return '';
-  const div = document.createElement('div');
-  div.appendChild(document.createTextNode(String(str)));
-  return div.innerHTML;
+  hideGlobalLoading();
 }
 
 function renderGoals() {
@@ -47,7 +34,7 @@ function renderGoals() {
   container.innerHTML = '';
 
   if (goals.length === 0) {
-    container.innerHTML = '<p style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px; border: 1px dashed var(--border); border-radius: 12px;">Belum ada target tabungan yang dibuat.</p>';
+    showEmptyState(container, 'fa-bullseye', 'Belum ada target tabungan yang dibuat.');
     return;
   }
 
@@ -116,8 +103,8 @@ if (goalFormEl) {
   goalFormEl.addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = document.getElementById('goal_name').value;
-    const target = parseInt(document.getElementById('goal_target').value.replace(/\./g, ''));
-    let current = parseInt(document.getElementById('goal_current').value.replace(/\./g, '')) || 0;
+    const target = Number(document.getElementById('goal_target').value.replace(/\./g, ''));
+    let current = Number(document.getElementById('goal_current').value.replace(/\./g, '')) || 0;
 
     if (!target || target <= 0) {
       showCustomAlert("Peringatan", "Target nominal harus lebih dari 0!", "error"); return;
@@ -258,8 +245,8 @@ function closeActionModals() {
 document.getElementById('confirm-nominal-btn').addEventListener('click', async () => {
   const walletEl = document.getElementById('nominal_wallet_id');
   const walletId = walletEl.value;
-  const amount = parseInt(document.getElementById('nominal_amount').value.replace(/\./g, ''));
-  const currentWalletBalance = parseInt(walletEl.getAttribute('data-balance')) || 0;
+  const amount = Number(document.getElementById('nominal_amount').value.replace(/\./g, ''));
+  const currentWalletBalance = Number(walletEl.getAttribute('data-balance')) || 0;
 
   if (!walletId) { showCustomAlert("Peringatan", "Pilih dompet terlebih dahulu!", "error"); return; }
   if (isNaN(amount) || amount <= 0) { showCustomAlert("Peringatan", "Masukkan nominal yang valid!", "error"); return; }
@@ -310,7 +297,7 @@ document.getElementById('confirm-nominal-btn').addEventListener('click', async (
 document.getElementById('confirm-full-btn').addEventListener('click', async () => {
   const walletEl = document.getElementById('full_wallet_id');
   const walletId = walletEl.value;
-  const currentWalletBalance = parseInt(walletEl.getAttribute('data-balance')) || 0;
+  const currentWalletBalance = Number(walletEl.getAttribute('data-balance')) || 0;
 
   if (!walletId) { showCustomAlert("Peringatan", "Pilih dompet penerima dana terlebih dahulu!", "error"); return; }
 
@@ -340,17 +327,5 @@ document.getElementById('confirm-full-btn').addEventListener('click', async () =
   showCustomAlert("Berhasil", "Tabungan berhasil diproses dan target dihapus!", "success");
   initGoals();
 });
-
-function showCustomAlert(title, message, type = 'success') {
-  document.getElementById('alert-title').innerText = title; document.getElementById('alert-message').innerText = message;
-  const iconEl = document.getElementById('alert-icon');
-  if(type === 'success') { iconEl.innerHTML = '<i class="fas fa-check-circle"></i>'; iconEl.style.color = 'var(--green)'; } 
-  else { iconEl.innerHTML = '<i class="fas fa-times-circle"></i>'; iconEl.style.color = 'var(--red)'; }
-  document.getElementById('alert-modal-overlay').classList.add('active'); document.getElementById('alert-modal').classList.add('active');
-}
-function closeCustomAlert() { document.getElementById('alert-modal-overlay').classList.remove('active'); document.getElementById('alert-modal').classList.remove('active'); }
-let confirmCallback = null;
-function showCustomConfirm(message, callback) { document.getElementById('confirm-message').innerText = message; confirmCallback = callback; document.getElementById('confirm-modal-overlay').classList.add('active'); document.getElementById('confirm-modal').classList.add('active'); }
-function closeCustomConfirm(isConfirmed) { document.getElementById('confirm-modal-overlay').classList.remove('active'); document.getElementById('confirm-modal').classList.remove('active'); if (isConfirmed && confirmCallback) confirmCallback(); }
 
 initGoals();

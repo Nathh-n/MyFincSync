@@ -1,13 +1,7 @@
 let plans = [];
 
-function escapeHTML(str) {
-  if (str === null || str === undefined) return '';
-  const div = document.createElement('div');
-  div.appendChild(document.createTextNode(String(str)));
-  return div.innerHTML;
-}
-
 async function initPlanner() {
+  showGlobalLoading();
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) {
     window.location.href = 'login.html';
@@ -24,6 +18,7 @@ async function initPlanner() {
     plans = data;
     renderPlans();
   }
+  hideGlobalLoading();
 }
 
 const freqSelect = document.getElementById('plan_frequency');
@@ -45,9 +40,9 @@ document.getElementById('planner-form').addEventListener('submit', async (e) => 
 
   const name = document.getElementById('plan_name').value;
   const amountStr = document.getElementById('plan_amount').value.replace(/\./g, '');
-  const amount = parseInt(amountStr);
+  const amount = Number(amountStr);
   const freq = freqSelect.value;
-  const customDaysRaw = parseInt(customDaysInput.value);
+  const customDaysRaw = Number(customDaysInput.value);
   const customDays = (customDaysRaw && customDaysRaw > 0) ? customDaysRaw : null;
 
   const btn = e.target.querySelector('button[type="submit"]');
@@ -84,12 +79,8 @@ function renderPlans() {
 
   let totalMonthlyTarget = 0;
 
-  const formatRp = (num) => {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Math.round(num)); 
-  };
-
   if (plans.length === 0) {
-    planList.innerHTML = '<p style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px;">Belum ada estimasi pengeluaran yang diatur.</p>';
+    showEmptyState(planList, 'fa-calculator', 'Belum ada estimasi pengeluaran yang diatur.');
   } else {
     plans.forEach(plan => {
       let monthlyEquivalent = 0;
@@ -163,14 +154,9 @@ const dot2 = document.getElementById('dot-2');
 
 if (carousel) {
   carousel.addEventListener('scroll', () => {
-    const scrollPercentage = carousel.scrollLeft / carousel.clientWidth;
-    if (scrollPercentage > 0.5) {
-      dot1.classList.remove('active');
-      dot2.classList.add('active');
-    } else {
-      dot1.classList.add('active');
-      dot2.classList.remove('active');
-    }
+    const index = Math.round(carousel.scrollLeft / carousel.clientWidth);
+    dot1.classList.toggle('active', index === 0);
+    dot2.classList.toggle('active', index === 1);
   });
 }
 

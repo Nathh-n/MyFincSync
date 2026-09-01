@@ -26,9 +26,9 @@ function setupFormSubmit(userId) {
     e.preventDefault();
 
     const amountStr = document.getElementById('amount').value.replace(/\./g, '');
-    const amount = parseInt(amountStr);
+    const amount = Number(amountStr);
     const adminStr = document.getElementById('admin_fee').value.replace(/\./g, '');
-    const adminFee = parseInt(adminStr) || 0;
+    const adminFee = Number(adminStr) || 0;
     
     const sourceSelect = document.getElementById('source_wallet_id');
     const destSelect = document.getElementById('dest_wallet_id');
@@ -47,7 +47,7 @@ function setupFormSubmit(userId) {
       showCustomAlert("Gagal", "Masukkan jumlah transfer yang valid!", "error"); return;
     }
 
-    const currentSourceBalance = parseInt(sourceSelect.options[sourceSelect.selectedIndex].getAttribute('data-balance'));
+    const currentSourceBalance = Number(sourceSelect.options[sourceSelect.selectedIndex].getAttribute('data-balance'));
     const totalDeduction = amount + adminFee;
 
     if (totalDeduction > currentSourceBalance) {
@@ -64,7 +64,7 @@ function setupFormSubmit(userId) {
 
     // Ambil saldo dompet tujuan
     const { data: destData } = await supabaseClient.from('wallets').select('balance').eq('id', destId).single();
-    let currentDestBalance = destData ? parseInt(destData.balance) || 0 : 0;
+    let currentDestBalance = destData ? Number(destData.balance) || 0 : 0;
 
     // 1. UPDATE SALDO DOMPET
     const newSourceBalance = currentSourceBalance - totalDeduction;
@@ -102,32 +102,5 @@ function setupFormSubmit(userId) {
     });
   });
 }
-
-function showCustomAlert(title, message, type = 'success') {
-  document.getElementById('alert-title').innerText = title; document.getElementById('alert-message').innerText = message;
-  const iconEl = document.getElementById('alert-icon');
-  if(type === 'success') { iconEl.innerHTML = '<i class="fas fa-check-circle"></i>'; iconEl.style.color = 'var(--green)'; } 
-  else { iconEl.innerHTML = '<i class="fas fa-times-circle"></i>'; iconEl.style.color = 'var(--red)'; }
-  document.getElementById('alert-modal-overlay').classList.add('active'); document.getElementById('alert-modal').classList.add('active');
-}
-function closeCustomAlert() { document.getElementById('alert-modal-overlay').classList.remove('active'); document.getElementById('alert-modal').classList.remove('active'); }
-let confirmCallback = null;
-function showCustomConfirm(message, callback) {
-  const modalOverlay = document.getElementById('confirm-modal-overlay');
-  if(!modalOverlay) {
-    if(confirm(message.replace(/<br>/g, "\n"))) callback(); 
-    return;
-  }
-  document.getElementById('confirm-message').innerHTML = message;
-  confirmCallback = callback;
-  modalOverlay.classList.add('active');
-  document.getElementById('confirm-modal').classList.add('active');
-}
-function closeCustomConfirm(isConfirmed) {
-  document.getElementById('confirm-modal-overlay').classList.remove('active');
-  document.getElementById('confirm-modal').classList.remove('active');
-  if (isConfirmed && confirmCallback) confirmCallback(); 
-}
-function formatRupiah(input) { let value = input.value.replace(/[^0-9]/g, ''); input.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, "."); }
 
 initTransferForm();

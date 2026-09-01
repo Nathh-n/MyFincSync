@@ -56,12 +56,8 @@ function formatIndoDateLong(dateStr) {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
   const parts = dateStr.split('-');
   if (parts.length !== 3) return dateStr;
-  return `${parseInt(parts[2])} ${months[parseInt(parts[1]) - 1]} ${parts[0]}`;
+  return `${Number(parts[2])} ${months[Number(parts[1]) - 1]} ${parts[0]}`;
 }
-
-const formatRp = (num) => {
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
-};
 
 // ==========================================
 // LOAD DATA DARI DATABASE
@@ -159,7 +155,7 @@ function renderTransactionPage() {
   transactionList.innerHTML = '';
 
   if (filteredTransactions.length === 0) {
-    transactionList.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 30px; font-size:13px;">Tidak ada transaksi pada periode ini.</p>';
+    showEmptyState(transactionList, 'fa-receipt', 'Tidak ada transaksi pada periode ini.');
     paginationControls.style.display = 'none';
     return;
   }
@@ -336,17 +332,6 @@ function exportCSV() {
 // ==========================================
 // REUSABLE HELPER & EDIT TRANSAKSI
 // ==========================================
-function formatRupiah(input) {
-  let value = input.value.replace(/[^0-9]/g, '');
-  input.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-}
-
-function escapeHTML(str) {
-  if (str === null || str === undefined) return '';
-  const div = document.createElement('div');
-  div.appendChild(document.createTextNode(String(str)));
-  return div.innerHTML;
-}
 
 async function loadEditOptions() {
   const { data: { user } } = await supabaseClient.auth.getUser();
@@ -410,7 +395,7 @@ async function saveEditedTransaction() {
   const id = document.getElementById('edit-id').value;
   const type = document.getElementById('edit-type').value;
   const title = document.getElementById('edit-title').value.trim();
-  const amount = parseInt(document.getElementById('edit-amount').value.replace(/\./g, '')) || 0;
+  const amount = Number(document.getElementById('edit-amount').value.replace(/\./g, '')) || 0;
   const transaction_date = document.getElementById('edit-date').value;
   const wallet_id = document.getElementById('edit-wallet').value;
   const category_id = document.getElementById('edit-category').value;
@@ -431,7 +416,7 @@ async function saveEditedTransaction() {
   const { data: walletRows } = await supabaseClient.from('wallets')
     .select('id, balance').in('id', walletIds);
   const balanceMap = {};
-  (walletRows || []).forEach(w => balanceMap[w.id] = parseInt(w.balance) || 0);
+  (walletRows || []).forEach(w => balanceMap[w.id] = Number(w.balance) || 0);
 
   const effect = (t, amt) => t === 'income' ? amt : -amt;
 
@@ -486,37 +471,6 @@ document.getElementById('save-edit-btn').addEventListener('click', saveEditedTra
 // ==========================================
 // ALERT & EVENT LISTENER
 // ==========================================
-let confirmCallback = null;
-
-function showCustomAlert(title, message, type = 'success') {
-  document.getElementById('alert-title').innerText = title;
-  document.getElementById('alert-message').innerText = message;
-  const iconEl = document.getElementById('alert-icon');
-  if(type === 'success') { iconEl.innerHTML = '<i class="fas fa-check-circle"></i>'; iconEl.style.color = '#16a34a'; }
-  else if(type === 'info') { iconEl.innerHTML = '<i class="fas fa-info-circle"></i>'; iconEl.style.color = '#3b82f6'; }
-  else { iconEl.innerHTML = '<i class="fas fa-times-circle"></i>'; iconEl.style.color = '#dc2626'; }
-  document.getElementById('alert-modal-overlay').classList.add('active');
-  document.getElementById('alert-modal').classList.add('active');
-}
-
-function showCustomConfirm(message, callback) {
-  const overlay = document.getElementById('confirm-modal-overlay');
-  if (!overlay) {
-    if (confirm(message.replace(/<br>/g, "\n"))) callback();
-    return;
-  }
-  document.getElementById('confirm-message').innerHTML = message;
-  confirmCallback = callback;
-  overlay.classList.add('active');
-  document.getElementById('confirm-modal').classList.add('active');
-}
-
-function closeCustomConfirm(isConfirmed) {
-  const overlay = document.getElementById('confirm-modal-overlay');
-  if (overlay) overlay.classList.remove('active');
-  document.getElementById('confirm-modal').classList.remove('active');
-  if (isConfirmed && confirmCallback) confirmCallback();
-}
 
 function showInsightAlert() {
   const iconEl = document.getElementById('alert-icon');
@@ -533,11 +487,6 @@ function showInsightAlert() {
   
   document.getElementById('alert-modal-overlay').classList.add('active'); 
   document.getElementById('alert-modal').classList.add('active');
-}
-
-function closeCustomAlert() { 
-  document.getElementById('alert-modal-overlay').classList.remove('active'); 
-  document.getElementById('alert-modal').classList.remove('active'); 
 }
 
 // Event Saat Filter Diganti
@@ -564,7 +513,9 @@ const filterWallet = document.getElementById('filter-wallet');
 if (filterWallet) filterWallet.addEventListener('change', applyFilters);
 
 async function init() {
+  showGlobalLoading();
   await loadEditOptions();
-  loadReport();
+  await loadReport();
+  hideGlobalLoading();
 }
 init();

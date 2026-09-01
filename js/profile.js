@@ -77,6 +77,7 @@ function initSheetDrag() {
 }
 
 async function initProfile() {
+  showGlobalLoading();
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) {
     window.location.href = 'login.html';
@@ -100,6 +101,7 @@ async function initProfile() {
   }
 
   await loadProfileStats(user.id);
+  hideGlobalLoading();
 }
 
 async function loadProfileStats(userId) {
@@ -116,13 +118,6 @@ async function loadProfileStats(userId) {
   document.getElementById('stat-goal-count').innerText = (goalsRes.data || []).length;
   document.getElementById('stat-plan-count').innerText = (plansRes.data || []).length;
   document.getElementById('stat-trx-count').innerText = (trxRes.data || []).length;
-}
-
-function getFirstDayOfMonth() {
-  const now = new Date();
-  const localDate = new Date(now.getFullYear(), now.getMonth(), 1);
-  const offset = localDate.getTimezoneOffset();
-  return new Date(localDate.getTime() - offset * 60 * 1000).toISOString().split('T')[0];
 }
 
 document.getElementById('profile-name-form').addEventListener('submit', async (e) => {
@@ -199,18 +194,6 @@ function confirmLogout() {
   });
 }
 
-function formatRupiah(input) {
-  let value = input.value.replace(/[^0-9]/g, '');
-  input.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-}
-
-function escapeHTML(str) {
-  if (str === null || str === undefined) return '';
-  const div = document.createElement('div');
-  div.appendChild(document.createTextNode(String(str)));
-  return div.innerHTML;
-}
-
 // =========================
 // KELOLA DOMPET (dari Profile)
 // =========================
@@ -233,11 +216,9 @@ function renderManageWallets(wallets) {
   container.innerHTML = '';
 
   if (wallets.length === 0) {
-    container.innerHTML = '<p style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 16px; border: 1px dashed var(--border); border-radius: 12px;">Belum ada dompet.</p>';
+    showEmptyState(container, 'fa-wallet', 'Belum ada dompet.');
     return;
   }
-
-  const formatRp = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
 
   wallets.forEach(wallet => {
     container.innerHTML += `
@@ -301,10 +282,10 @@ function renderManageCategories(categories) {
   });
 
   if (incomeContainer && incomeContainer.innerHTML === '') {
-    incomeContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 10px; border: 1px dashed var(--border); border-radius: 8px;">Belum ada kategori pemasukan.</p>';
+    showEmptyState(incomeContainer, 'fa-circle-arrow-down', 'Belum ada kategori pemasukan.');
   }
   if (expenseContainer && expenseContainer.innerHTML === '') {
-    expenseContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 10px; border: 1px dashed var(--border); border-radius: 8px;">Belum ada kategori pengeluaran.</p>';
+    showEmptyState(expenseContainer, 'fa-circle-arrow-up', 'Belum ada kategori pengeluaran.');
   }
 }
 
@@ -321,48 +302,6 @@ function deleteManageCategory(id) {
 }
 
 // =========================
-// SISTEM POP-UP GLOBAL (lokal untuk halaman profile)
-// =========================
-function showCustomAlert(title, message, type = 'success') {
-  document.getElementById('alert-title').innerText = title;
-  document.getElementById('alert-message').innerText = message;
-  const iconEl = document.getElementById('alert-icon');
-
-  if (type === 'success') {
-    iconEl.innerHTML = '<i class="fas fa-check-circle"></i>';
-    iconEl.style.color = 'var(--green)';
-  } else {
-    iconEl.innerHTML = '<i class="fas fa-times-circle"></i>';
-    iconEl.style.color = 'var(--red)';
-  }
-
-  document.getElementById('alert-modal-overlay').classList.add('active');
-  document.getElementById('alert-modal').classList.add('active');
-}
-
-function closeCustomAlert() {
-  document.getElementById('alert-modal-overlay').classList.remove('active');
-  document.getElementById('alert-modal').classList.remove('active');
-}
-
-let confirmCallback = null;
-function showCustomConfirm(message, callback) {
-  document.getElementById('confirm-message').innerText = message;
-  confirmCallback = callback;
-
-  document.getElementById('confirm-modal-overlay').classList.add('active');
-  document.getElementById('confirm-modal').classList.add('active');
-}
-
-function closeCustomConfirm(isConfirmed) {
-  document.getElementById('confirm-modal-overlay').classList.remove('active');
-  document.getElementById('confirm-modal').classList.remove('active');
-  if (isConfirmed && confirmCallback) {
-    confirmCallback();
-  }
-}
-
-// =========================
 // FORM KELOLA DOMPET
 // =========================
 const profileWalletForm = document.getElementById('profile-wallet-form');
@@ -375,7 +314,7 @@ if (profileWalletForm) {
 
     const name = document.getElementById('profile_wallet_name').value;
     const balanceStr = document.getElementById('profile_wallet_balance').value.replace(/\./g, '');
-    const balance = parseInt(balanceStr) || 0;
+    const balance = Number(balanceStr) || 0;
 
     const btn = e.target.querySelector('button[type="submit"]');
     const originalText = btn.innerHTML;

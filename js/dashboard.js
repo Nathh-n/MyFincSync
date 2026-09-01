@@ -17,13 +17,6 @@ let globalExpenseByCategory = {};
 // State Periode (Bulan Ini / Semua Data)
 let currentPeriod = 'month';
 
-function getFirstDayOfMonth() {
-  const now = new Date();
-  const localDate = new Date(now.getFullYear(), now.getMonth(), 1);
-  const offset = localDate.getTimezoneOffset();
-  return new Date(localDate.getTime() - offset * 60 * 1000).toISOString().split('T')[0];
-}
-
 function setPeriod(period) {
   currentPeriod = period;
   document.querySelectorAll('.period-btn').forEach(btn => {
@@ -71,8 +64,6 @@ async function loadSummary() {
   if (wallets) { 
     wallets.forEach(wallet => { activeBalance += Number(wallet.balance) || 0; }); 
   }
-
-  const formatRp = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
 
   currentFormattedIncome = formatRp(totalIncome);
   currentFormattedExpense = formatRp(totalExpense);
@@ -175,7 +166,6 @@ function renderTopSpends() {
   }
 
   let html = '';
-  const formatRp = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
 
   sorted.forEach((item, index) => {
     const displayAmount = isBalanceHidden ? "Rp •••••••" : formatRp(item.amount);
@@ -203,7 +193,6 @@ function renderWalletDistribution() {
   }
 
   let html = '';
-  const formatRp = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
 
   const sortedWallets = [...globalWallets].sort((a,b) => b.balance - a.balance).slice(0, 3);
 
@@ -250,10 +239,9 @@ async function loadRecentTransactions() {
   transactionList.innerHTML = '';
 
   if (!transactions || transactions.length === 0) {
-    transactionList.innerHTML = '<p style="color: #94a3b8; font-size: 13px; text-align: center; padding: 15px;">Belum ada transaksi.</p>'; return;
+    showEmptyState(transactionList, 'fa-receipt', 'Belum ada transaksi.');
+    return;
   }
-
-  const formatRp = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
 
   transactions.forEach(trx => {
     let amountColor = '';
@@ -286,13 +274,6 @@ async function loadRecentTransactions() {
   });
 }
 
-function escapeHTML(str) {
-  if (str === null || str === undefined) return '';
-  const div = document.createElement('div');
-  div.appendChild(document.createTextNode(String(str)));
-  return div.innerHTML;
-}
-
 function toggleHistory() {
   const content = document.getElementById('history-content');
   const chevron = document.getElementById('history-chevron');
@@ -310,7 +291,7 @@ function undoTransaction(trxId, walletId, amount, type) {
     if (walletId) {
       const { data: wData } = await supabaseClient.from('wallets').select('balance').eq('id', walletId).single();
       if (wData) {
-        let currentBalance = parseInt(wData.balance) || 0;
+        let currentBalance = Number(wData.balance) || 0;
         let restoredBalance = currentBalance;
 
         if (type === 'expense') restoredBalance = currentBalance + amount; 
@@ -326,27 +307,6 @@ function undoTransaction(trxId, walletId, amount, type) {
   });
 }
 
-function showCustomAlert(title, message, type = 'success') {
-  document.getElementById('alert-title').innerText = title; document.getElementById('alert-message').innerText = message;
-  const iconEl = document.getElementById('alert-icon');
-  if(type === 'success') { iconEl.innerHTML = '<i class="fas fa-check-circle"></i>'; iconEl.style.color = 'var(--green)'; } 
-  else { iconEl.innerHTML = '<i class="fas fa-times-circle"></i>'; iconEl.style.color = 'var(--red)'; }
-  document.getElementById('alert-modal-overlay').classList.add('active'); document.getElementById('alert-modal').classList.add('active');
-}
-function closeCustomAlert() { document.getElementById('alert-modal-overlay').classList.remove('active'); document.getElementById('alert-modal').classList.remove('active'); }
-
-let confirmCallback = null;
-function showCustomConfirm(message, callback) {
-  document.getElementById('confirm-message').innerHTML = message;
-  confirmCallback = callback;
-  document.getElementById('confirm-modal-overlay').classList.add('active'); document.getElementById('confirm-modal').classList.add('active');
-}
-function closeCustomConfirm(isConfirmed) {
-  document.getElementById('confirm-modal-overlay').classList.remove('active'); document.getElementById('confirm-modal').classList.remove('active');
-  if (isConfirmed && confirmCallback) confirmCallback(); 
-}
-function formatRupiah(input) { let value = input.value.replace(/[^0-9]/g, ''); input.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, "."); }
-
 async function loadUserName() {
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) return;
@@ -354,6 +314,7 @@ async function loadUserName() {
   document.getElementById('user-name').innerText = name;
 }
 
-loadUserName();
-loadSummary();
-loadRecentTransactions();
+showGlobalLoading();
+Promise.all([loadUserName(), loadSummary(), loadRecentTransactions()])
+  .catch(err => console.error('Dashboard load error:', err))
+  .finally(hideGlobalLoading);

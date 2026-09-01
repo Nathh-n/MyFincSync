@@ -11,6 +11,10 @@
   <link rel="stylesheet" href="css/dashboard.css">
 
   <style>
+    .top-header-back { display: flex; align-items: center; gap: 15px; padding: 24px 20px 16px 20px; }
+    .top-header-back a { color: var(--text-main); font-size: 20px; text-decoration: none; }
+    .top-header-back h1 { font-size: 20px; font-weight: 700; color: var(--text-main); }
+
     .goals-content { padding-bottom: 100px; }
     .goals-wrapper {
       display: grid;
@@ -50,11 +54,9 @@
 
   <div class="mobile-wrapper">
 
-    <header class="top-header" style="padding-bottom: 0;">
-      <div class="user-greeting">
-        <p>Wujudkan Impianmu</p>
-        <h1>Target Tabungan</h1>
-      </div>
+    <header class="top-header-back">
+      <a href="planner.html"><i class="fas fa-arrow-left"></i></a>
+      <h1>Target Tabungan</h1>
     </header>
 
     <div class="goals-content">
@@ -189,13 +191,13 @@
       </div>
     </div>
 
-    <a href="planner.html" class="nav-item">
-      <i class="fas fa-calculator"></i>
-      <span>Planner</span>
+    <a href="planner.html" class="nav-item active">
+      <i class="fas fa-chart-line"></i>
+      <span>Perencanaan</span>
     </a>
-    <a href="goals.html" class="nav-item active"> 
-      <i class="fas fa-bullseye"></i>
-      <span>Target</span>
+    <a href="profile.html" class="nav-item">
+      <i class="fas fa-user-circle"></i>
+      <span>Profile</span>
     </a>
   </nav>
 
@@ -204,6 +206,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase.js"></script>
   <script src="js/auth.js"></script>
+  <script src="js/shared.js"></script>
   <script src="js/goals.js"></script>
 
   <script>

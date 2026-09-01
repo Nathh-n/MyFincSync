@@ -5,7 +5,7 @@ if (walletForm) {
     e.preventDefault();
     const wallet_name = document.getElementById('wallet_name').value;
     const balanceStr = document.getElementById('wallet_balance').value.replace(/\./g, '');
-    const wallet_balance = parseInt(balanceStr) || 0;
+    const wallet_balance = Number(balanceStr) || 0;
     const { data: { user } } = await supabaseClient.auth.getUser();
 
     const btn = walletForm.querySelector('button[type="submit"]');
@@ -55,19 +55,12 @@ function setWalletSort(mode, chip) {
   renderWallets(sortWallets(currentWallets));
 }
 
-function escapeHTML(str) {
-  if (str === null || str === undefined) return '';
-  const div = document.createElement('div');
-  div.appendChild(document.createTextNode(String(str)));
-  return div.innerHTML;
-}
-
 function renderWallets(wallets) {
   const walletContainer = document.getElementById('wallet-container');
   walletContainer.innerHTML = '';
 
   if (!wallets || wallets.length === 0) {
-    walletContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px; border: 1px dashed var(--border); border-radius: 12px;">Belum ada dompet. Kelola dompet dari halaman Profile.</p>';
+    showEmptyState(walletContainer, 'fa-wallet', 'Belum ada dompet. Kelola dompet dari halaman Profile.');
     return;
   }
 
@@ -78,18 +71,6 @@ function renderWallets(wallets) {
         <div class="wallet-info"><h3>${escapeHTML(wallet.name)}</h3><p>${formattedBalance}</p></div>
       </div>
     `;
-  });
-}
-
-function deleteWallet(id) {
-  // PERBAIKAN LOGIKA DOMINO
-  showCustomConfirm('PERINGATAN KERAS!<br>Menghapus dompet ini akan <b>MENGHAPUS SEMUA riwayat transaksi</b> yang menggunakan dompet ini.<br>Yakin ingin melanjutkan?', async () => {
-    const { error } = await supabaseClient.from('wallets').delete().eq('id', id);
-    if (error) { showCustomAlert('Gagal', error.message, 'error'); return; }
-    showCustomAlert('Terhapus', 'Dompet dan seluruh riwayatnya telah dihapus.', 'success');
-    getWallets(); 
-    loadSummary(); // Refresh dashboard data
-    loadRecentTransactions();
   });
 }
 

@@ -110,6 +110,10 @@ if (loginForm) {
     const email = document.getElementById('login_email').value;
     const password = document.getElementById('login_password').value;
 
+    const rememberMe = document.getElementById('remember-me');
+    const persistSession = rememberMe ? rememberMe.checked : true;
+    localStorage.setItem('mfs_remember', persistSession ? '1' : '0');
+
     const { error } = await supabaseClient.auth.signInWithPassword({
       email,
       password
@@ -151,6 +155,7 @@ checkUser();
 // ============================
 async function logout() {
   await supabaseClient.auth.signOut();
+  localStorage.removeItem('mfs_remember');
   window.location.href = 'login.html';
 }
 
