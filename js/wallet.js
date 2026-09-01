@@ -23,11 +23,36 @@ if (walletForm) {
   });
 }
 
+let currentWallets = [];
+let walletSortMode = 'asc';
+
 async function getWallets() {
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) return;
-  const { data } = await supabaseClient.from('wallets').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
-  if (data) renderWallets(data);
+  const { data } = await supabaseClient.from('wallets').select('*').eq('user_id', user.id);
+  if (data) {
+    currentWallets = data;
+    renderWallets(sortWallets(currentWallets));
+  }
+}
+
+function sortWallets(wallets) {
+  const arr = [...wallets];
+  if (walletSortMode === 'asc') {
+    arr.sort((a, b) => Number(a.balance) - Number(b.balance));
+  } else if (walletSortMode === 'desc') {
+    arr.sort((a, b) => Number(b.balance) - Number(a.balance));
+  } else {
+    arr.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }
+  return arr;
+}
+
+function setWalletSort(mode, chip) {
+  walletSortMode = mode;
+  document.querySelectorAll('#wallet-sort-chips .sort-chip').forEach(c => c.classList.remove('active'));
+  if (chip) chip.classList.add('active');
+  renderWallets(sortWallets(currentWallets));
 }
 
 function renderWallets(wallets) {

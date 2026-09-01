@@ -78,6 +78,31 @@
     #history-chevron.closed { transform: rotate(180deg); }
     .history-collapse { overflow: hidden; transition: max-height 0.35s ease; max-height: 600px; }
     .history-collapse.closed { max-height: 0; }
+
+    /* SORT CHIP DOMPET */
+    .wallet-sort-chips {
+      display: flex;
+      gap: 8px;
+      margin: 8px 0 0 0;
+    }
+    .sort-chip {
+      padding: 7px 16px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--card-bg);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .sort-chip.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
   </style>
 </head>
 <body>
@@ -181,6 +206,11 @@
     <section class="content-section" style="padding-bottom: 100px;">
       <div class="section-header">
         <h3>Dompet Saya</h3>
+      </div>
+      <div class="wallet-sort-chips" id="wallet-sort-chips">
+        <button class="sort-chip active" data-sort="asc" onclick="setWalletSort('asc', this)">Terendah</button>
+        <button class="sort-chip" data-sort="desc" onclick="setWalletSort('desc', this)">Tertinggi</button>
+        <button class="sort-chip" data-sort="latest" onclick="setWalletSort('latest', this)">Terbaru</button>
       </div>
       <div id="wallet-container" class="wallet-scroll-container">
       </div>
