@@ -1,5 +1,4 @@
 let plans = [];
-let currentUserId = null;
 
 async function initPlanner() {
   const { data: { user } } = await supabaseClient.auth.getUser();
@@ -8,7 +7,6 @@ async function initPlanner() {
     return;
   }
   currentUserId = user.id;
-
   const { data, error } = await supabaseClient
     .from('budget_plans')
     .select('*')
@@ -171,50 +169,25 @@ if (carousel) {
 
 // =========================
 // SISTEM POP-UP GLOBAL
+// (didefinisikan di js/goals.js karena halaman ini memuat kedua script)
 // =========================
-function showCustomAlert(title, message, type = 'success') {
-  document.getElementById('alert-title').innerText = title;
-  document.getElementById('alert-message').innerText = message;
-  const iconEl = document.getElementById('alert-icon');
-  
-  if(type === 'success') {
-     iconEl.innerHTML = '<i class="fas fa-check-circle"></i>';
-     iconEl.style.color = 'var(--green)';
-  } else {
-     iconEl.innerHTML = '<i class="fas fa-times-circle"></i>';
-     iconEl.style.color = 'var(--red)';
-  }
-  
-  document.getElementById('alert-modal-overlay').classList.add('active');
-  document.getElementById('alert-modal').classList.add('active');
+
+// =========================
+// TAB SWITCHING (Planner | Target)
+// =========================
+function switchTab(tabName) {
+  const tabPlanner = document.getElementById('tab-planner');
+  const tabTarget = document.getElementById('tab-target');
+  const btnPlanner = document.getElementById('tab-btn-planner');
+  const btnTarget = document.getElementById('tab-btn-target');
+
+  const isPlanner = tabName === 'planner';
+
+  tabPlanner.classList.toggle('hidden', !isPlanner);
+  tabTarget.classList.toggle('hidden', isPlanner);
+  btnPlanner.classList.toggle('active', isPlanner);
+  btnTarget.classList.toggle('active', !isPlanner);
 }
 
-function closeCustomAlert() {
-  document.getElementById('alert-modal-overlay').classList.remove('active');
-  document.getElementById('alert-modal').classList.remove('active');
-}
-
-let confirmCallback = null;
-function showCustomConfirm(message, callback) {
-  document.getElementById('confirm-message').innerText = message;
-  confirmCallback = callback;
-  
-  document.getElementById('confirm-modal-overlay').classList.add('active');
-  document.getElementById('confirm-modal').classList.add('active');
-}
-
-function closeCustomConfirm(isConfirmed) {
-  document.getElementById('confirm-modal-overlay').classList.remove('active');
-  document.getElementById('confirm-modal').classList.remove('active');
-  if (isConfirmed && confirmCallback) {
-    confirmCallback(); 
-  }
-}
-
-// INIT
+// INIT (initGoals() sudah dipanggil otomatis oleh js/goals.js)
 initPlanner();
-
-function formatRupiah(input) {
-  let value = input.value.replace(/[^0-9]/g, '');
-  input.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-}

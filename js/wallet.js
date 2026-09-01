@@ -35,7 +35,7 @@ function renderWallets(wallets) {
   walletContainer.innerHTML = '';
 
   if (!wallets || wallets.length === 0) {
-    walletContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px; border: 1px dashed var(--border); border-radius: 12px;">Belum ada dompet. Tambahkan dompet pertama di atas.</p>';
+    walletContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px; border: 1px dashed var(--border); border-radius: 12px;">Belum ada dompet. Kelola dompet dari halaman Profile.</p>';
     return;
   }
 
@@ -44,9 +44,6 @@ function renderWallets(wallets) {
     walletContainer.innerHTML += `
       <div class="wallet-card">
         <div class="wallet-info"><h3>${wallet.name}</h3><p>${formattedBalance}</p></div>
-        <div class="wallet-actions">
-          <button onclick="deleteWallet('${wallet.id}')"><i class="fas fa-trash"></i> Hapus</button>
-        </div>
       </div>
     `;
   });

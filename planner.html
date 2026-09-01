@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Budget Planner</title>
+  <title>Perencanaan Keuangan</title>
     
   <link rel="icon" type="image/png" href="assets/favicon.png">
   
@@ -13,6 +13,36 @@
   <style>
     .planner-content { padding-bottom: 100px; }
     .hidden { display: none !important; }
+
+    .tab-bar {
+      display: flex;
+      background: #eef2f7;
+      border-radius: 14px;
+      padding: 5px;
+      gap: 5px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 11px 0;
+      border: none;
+      border-radius: 10px;
+      background: transparent;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: 0.25s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+    }
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+    }
 
     .carousel-container {
       display: flex;
@@ -64,6 +94,38 @@
     .slider-dots { display: flex; justify-content: center; gap: 6px; margin-top: 12px; }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: #e2e8f0; transition: 0.3s; }
     .dot.active { background: var(--primary); width: 16px; border-radius: 4px; }
+
+    .goals-wrapper {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 15px;
+    }
+    .modal-input-styled {
+      width: 100%; padding: 14px 16px; border: 1px solid var(--border); 
+      border-radius: 12px; font-size: 14px; outline: none; 
+      background: #f8fafc; margin-bottom: 12px; color: var(--text-main);
+    }
+    .modal-input-styled:focus { border-color: var(--primary); background: white; }
+
+    .custom-select-wrapper { position: relative; user-select: none; width: 100%; margin-bottom: 12px; text-align: left;}
+    .custom-select-trigger {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 16px; background: #f8fafc; border: 1px solid var(--border);
+      border-radius: 12px; font-size: 14px; color: var(--text-main); cursor: pointer; transition: 0.2s;
+    }
+    .custom-select-trigger:hover { border-color: var(--primary); }
+    .custom-select-wrapper.open .custom-select-trigger { border-color: var(--primary); background: white; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+    .custom-select-options {
+      position: absolute; top: 100%; left: 0; right: 0; background: white;
+      border: 1px solid var(--primary); border-top: none; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 10; opacity: 0; visibility: hidden; transform: translateY(-5px); transition: all 0.2s ease; max-height: 200px; overflow-y: auto;
+    }
+    .custom-select-wrapper.open .custom-select-options { opacity: 1; visibility: visible; transform: translateY(0); }
+    .custom-option { padding: 12px 16px; font-size: 14px; color: var(--text-main); cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
+    .custom-option:last-child { border-bottom: none; }
+    .custom-option:hover { background: #f1f5f9; color: var(--primary); }
+    .custom-select-arrow { transition: transform 0.3s ease; }
+    .custom-select-wrapper.open .custom-select-arrow { transform: rotate(180deg); }
   </style>
 </head>
 <body>
@@ -72,77 +134,178 @@
 
     <header class="top-header" style="padding-bottom: 0;">
       <div class="user-greeting">
-        <p>Estimasi Pengeluaran</p>
-        <h1>Budget Planner</h1>
+        <p>Rencanakan Keuanganmu</p>
+        <h1>Perencanaan</h1>
       </div>
     </header>
 
     <div class="planner-content">
-      
-      <section class="content-section" style="margin-top: 15px;">
-        <div class="carousel-container" id="target-carousel">
-          
-          <div class="carousel-slide">
-            <div class="target-card monthly-card">
-              <p>Target Pendapatan Minimal Bulanan</p>
-              <h2 id="total-target-monthly">Rp 0</h2>
-              <div class="target-info">
-                <i class="fas fa-info-circle"></i> Geser untuk lihat target harian <i class="fas fa-arrow-right"></i>
+
+      <section class="content-section" style="margin-top: 15px; padding-bottom: 0;">
+        <div class="tab-bar">
+          <button type="button" class="tab-btn active" id="tab-btn-planner" onclick="switchTab('planner')">
+            <i class="fas fa-calculator"></i> Planner
+          </button>
+          <button type="button" class="tab-btn" id="tab-btn-target" onclick="switchTab('target')">
+            <i class="fas fa-bullseye"></i> Target
+          </button>
+        </div>
+      </section>
+
+      <div id="tab-planner">
+
+        <section class="content-section" style="margin-top: 15px;">
+          <div class="carousel-container" id="target-carousel">
+            
+            <div class="carousel-slide">
+              <div class="target-card monthly-card">
+                <p>Target Pendapatan Minimal Bulanan</p>
+                <h2 id="total-target-monthly">Rp 0</h2>
+                <div class="target-info">
+                  <i class="fas fa-info-circle"></i> Geser untuk lihat target harian <i class="fas fa-arrow-right"></i>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class="carousel-slide">
-            <div class="target-card daily-card">
-              <p>Target Pendapatan Minimal Harian</p>
-              <h2 id="total-target-daily">Rp 0</h2>
-              <div class="target-info">
-                <i class="fas fa-sun"></i> Uang yg harus terkumpul hari ini
+            <div class="carousel-slide">
+              <div class="target-card daily-card">
+                <p>Target Pendapatan Minimal Harian</p>
+                <h2 id="total-target-daily">Rp 0</h2>
+                <div class="target-info">
+                  <i class="fas fa-sun"></i> Uang yg harus terkumpul hari ini
+                </div>
               </div>
             </div>
+
           </div>
 
+          <div class="slider-dots">
+            <div class="dot active" id="dot-1"></div>
+            <div class="dot" id="dot-2"></div>
+          </div>
+        </section>
+
+        <section class="content-section">
+          <div class="section-header">
+            <h3>Tambah Estimasi</h3>
+          </div>
+          <div class="card form-card">
+            <form id="planner-form" class="inline-form">
+              <input type="text" id="plan_name" placeholder="Nama (Cth: Kuota Internet)" required>
+              
+              <input type="text" inputmode="numeric" id="plan_amount" placeholder="Nominal (Rp)" required oninput="formatRupiah(this)">
+              
+              <select id="plan_frequency" required>
+                <option value="daily">Per Hari</option>
+                <option value="monthly" selected>Per Bulan</option>
+                <option value="custom">Kustom (Per X Hari)</option>
+              </select>
+
+              <input type="number" id="plan_custom_days" class="hidden" placeholder="Berapa hari sekali? (Cth: 3)">
+              
+              <button type="submit" class="btn-primary" style="background: var(--primary); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+                <i class="fas fa-plus"></i> Simpan Estimasi
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <section class="content-section">
+          <div class="section-header">
+            <h3>Rincian Pengeluaran Bulanan</h3>
+          </div>
+          <div id="plan-list" class="transaction-list">
+          </div>
+        </section>
+
+      </div>
+
+      <div id="tab-target" class="hidden">
+
+        <section class="content-section" style="margin-top: 15px;">
+          <div class="section-header">
+            <h3>Buat Target Baru</h3>
+          </div>
+          <div class="card form-card">
+            <form id="goal-form" class="inline-form">
+              <input type="text" id="goal_name" placeholder="Nama Impian (Cth: HP Baru)" required>
+              <input type="text" inputmode="numeric" id="goal_target" placeholder="Target Nominal (Rp)" required oninput="formatRupiah(this)">
+              <input type="text" inputmode="numeric" id="goal_current" placeholder="Uang Terkumpul Saat Ini (Rp)" value="0" oninput="formatRupiah(this)">
+              
+              <button type="submit" class="btn-primary" style="background: var(--primary); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+                <i class="fas fa-bullseye"></i> Mulai Menabung
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <section class="content-section">
+          <div class="section-header">
+            <h3>Daftar Impian & Progress</h3>
+          </div>
+          <div class="goals-wrapper" id="goals-container">
+          </div>
+        </section>
+
+      </div>
+
+    </div>
+
+    <div class="custom-modal-overlay" id="nominal-modal-overlay"></div>
+    <div class="custom-modal" id="nominal-modal">
+      <div class="modal-header">
+        <h3 style="font-size: 16px; color: var(--text-main);" id="nominal-modal-title">Tambah Tabungan</h3>
+        <button class="btn-close-modal" onclick="closeActionModals()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body" style="text-align: left;">
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;" id="nominal-modal-desc">Pilih dompet.</p>
+        
+        <label style="font-size: 12px; font-weight: bold; color: var(--text-main); display: block; margin-bottom: 6px;" id="nominal-wallet-label">Dompet:</label>
+        
+        <div class="custom-select-wrapper" id="nominal-wallet-select">
+          <div class="custom-select-trigger" id="nominal-select-trigger">
+            <span id="nominal-select-text">Memuat Dompet...</span>
+            <i class="fas fa-chevron-down custom-select-arrow"></i>
+          </div>
+          <div class="custom-select-options" id="nominal-select-options"></div>
+          <input type="hidden" id="nominal_wallet_id" value="">
         </div>
 
-        <div class="slider-dots">
-          <div class="dot active" id="dot-1"></div>
-          <div class="dot" id="dot-2"></div>
-        </div>
-      </section>
+        <label style="font-size: 12px; font-weight: bold; color: var(--text-main); display: block; margin-bottom: 6px;">Nominal (Rp):</label>
+        <input type="text" inputmode="numeric" id="nominal_amount" placeholder="Cth: 50.000" class="modal-input-styled" oninput="formatRupiah(this)">
+        
+        <button id="confirm-nominal-btn" class="btn-primary" style="width: 100%; margin-top: 5px;">
+          <i class="fas fa-check"></i> <span id="nominal-btn-text">Konfirmasi</span>
+        </button>
+      </div>
+    </div>
 
-      <section class="content-section">
-        <div class="section-header">
-          <h3>Tambah Estimasi</h3>
+    <div class="custom-modal-overlay" id="full-action-modal-overlay"></div>
+    <div class="custom-modal" id="full-action-modal">
+      <div class="modal-header">
+        <h3 style="font-size: 16px; color: var(--text-main);" id="full-modal-title">Cairkan Tabungan</h3>
+        <button class="btn-close-modal" onclick="closeActionModals()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body" style="text-align: left;">
+        <div style="background: #fef2f2; border: 1px solid #fca5a5; padding: 10px 15px; border-radius: 10px; margin-bottom: 15px;">
+           <p style="font-size: 13px; color: #991b1b;" id="full-modal-desc">Ada dana Rp X yang harus dikembalikan ke dompet.</p>
         </div>
-        <div class="card form-card">
-          <form id="planner-form" class="inline-form">
-            <input type="text" id="plan_name" placeholder="Nama (Cth: Kuota Internet)" required>
-            
-            <input type="text" inputmode="numeric" id="plan_amount" placeholder="Nominal (Rp)" required oninput="formatRupiah(this)">
-            
-            <select id="plan_frequency" required>
-              <option value="daily">Per Hari</option>
-              <option value="monthly" selected>Per Bulan</option>
-              <option value="custom">Kustom (Per X Hari)</option>
-            </select>
-
-            <input type="number" id="plan_custom_days" class="hidden" placeholder="Berapa hari sekali? (Cth: 3)">
-            
-            <button type="submit" class="btn-primary" style="background: var(--primary); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
-              <i class="fas fa-plus"></i> Simpan Estimasi
-            </button>
-          </form>
+        
+        <label style="font-size: 12px; font-weight: bold; color: var(--text-main); display: block; margin-bottom: 6px;">Pilih Dompet Penerima Dana:</label>
+        
+        <div class="custom-select-wrapper" id="full-wallet-select">
+          <div class="custom-select-trigger" id="full-select-trigger">
+            <span id="full-select-text">Memuat Dompet...</span>
+            <i class="fas fa-chevron-down custom-select-arrow"></i>
+          </div>
+          <div class="custom-select-options" id="full-select-options"></div>
+          <input type="hidden" id="full_wallet_id" value="">
         </div>
-      </section>
-
-      <section class="content-section">
-        <div class="section-header">
-          <h3>Rincian Pengeluaran Bulanan</h3>
-        </div>
-        <div id="plan-list" class="transaction-list">
-        </div>
-      </section>
-
+        
+        <button id="confirm-full-btn" class="btn-primary" style="width: 100%; margin-top: 5px;">
+          <i class="fas fa-check"></i> <span id="full-btn-text">Konfirmasi</span>
+        </button>
+      </div>
     </div>
 
     <div class="custom-modal-overlay" id="alert-modal-overlay"></div>
@@ -192,12 +355,12 @@
     </div>
 
     <a href="planner.html" class="nav-item active">
-      <i class="fas fa-calculator"></i>
-      <span>Planner</span>
+      <i class="fas fa-chart-line"></i>
+      <span>Perencanaan</span>
     </a>
-    <a href="goals.html" class="nav-item">
-      <i class="fas fa-bullseye"></i>
-      <span>Target</span>
+    <a href="profile.html" class="nav-item">
+      <i class="fas fa-user-circle"></i>
+      <span>Profile</span>
     </a>
   </nav>
 
@@ -206,6 +369,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase.js"></script>
   <script src="js/auth.js"></script>
+  <script src="js/goals.js"></script>
   <script src="js/planner.js"></script>
 
   <script>

@@ -14,14 +14,39 @@ let globalWallets = [];
 let globalActiveBalance = 0;
 let globalExpenseByCategory = {};
 
+// State Periode (Bulan Ini / Semua Data)
+let currentPeriod = 'month';
+
+function getFirstDayOfMonth() {
+  const now = new Date();
+  const localDate = new Date(now.getFullYear(), now.getMonth(), 1);
+  const offset = localDate.getTimezoneOffset();
+  return new Date(localDate.getTime() - offset * 60 * 1000).toISOString().split('T')[0];
+}
+
+function setPeriod(period) {
+  currentPeriod = period;
+  document.querySelectorAll('.period-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.period === period);
+  });
+  loadSummary();
+  loadRecentTransactions();
+}
+
 async function loadSummary() {
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) return;
 
-  const { data: transactions } = await supabaseClient
+  let query = supabaseClient
     .from('transactions')
     .select('amount, type, categories(name)')
     .eq('user_id', user.id);
+
+  if (currentPeriod === 'month') {
+    query = query.gte('transaction_date', getFirstDayOfMonth());
+  }
+
+  const { data: transactions } = await query;
 
   let totalIncome = 0; 
   let totalExpense = 0;
@@ -211,9 +236,15 @@ async function loadRecentTransactions() {
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) return;
 
-  const { data: transactions } = await supabaseClient
+  let txQuery = supabaseClient
     .from('transactions').select(`id, title, amount, type, transaction_date, categories (name), wallets (id, name)`)
-    .eq('user_id', user.id).order('transaction_date', { ascending: false }).order('created_at', { ascending: false }).limit(5);
+    .eq('user_id', user.id);
+
+  if (currentPeriod === 'month') {
+    txQuery = txQuery.gte('transaction_date', getFirstDayOfMonth());
+  }
+
+  const { data: transactions } = await txQuery.order('transaction_date', { ascending: false }).order('created_at', { ascending: false }).limit(5);
 
   const transactionList = document.getElementById('transaction-list');
   transactionList.innerHTML = '';
@@ -253,6 +284,13 @@ async function loadRecentTransactions() {
       </div>
     `;
   });
+}
+
+function toggleHistory() {
+  const content = document.getElementById('history-content');
+  const chevron = document.getElementById('history-chevron');
+  content.classList.toggle('closed');
+  chevron.classList.toggle('closed');
 }
 
 function undoTransaction(trxId, walletId, amount, type) {

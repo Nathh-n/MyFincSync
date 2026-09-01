@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Profile</title>
+
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+
+  <style>
+    .profile-content { padding-bottom: 100px; }
+
+    /* ===== KARTU IDENTITAS ===== */
+    .profile-card {
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .avatar-circle {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), #60a5fa);
+      color: white;
+      font-size: 22px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 10px 20px rgba(59, 130, 246, 0.25);
+    }
+    .profile-info { min-width: 0; }
+    .profile-info h2 { font-size: 17px; font-weight: 700; color: var(--text-main); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .profile-info .profile-email { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .profile-info .profile-since { font-size: 11px; color: var(--text-muted); }
+    .profile-info .profile-since i { margin-right: 4px; }
+
+    /* ===== MINI STATS (1 row 4 cols) ===== */
+    .mini-stats-card { padding: 14px; }
+    .mini-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 4px;
+    }
+    .mini-stat { text-align: center; padding: 6px 2px; }
+    .mini-stat-icon {
+      width: 28px; height: 28px; border-radius: 8px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 12px; margin-bottom: 4px;
+    }
+    .mini-stat-icon.icon-green { background: var(--green-light); color: var(--green); }
+    .mini-stat-icon.icon-blue { background: #dbeafe; color: var(--primary); }
+    .mini-stat-icon.icon-amber { background: #fef3c7; color: #b45309; }
+    .mini-stat-icon.icon-red { background: var(--red-light); color: var(--red); }
+    .mini-stat-value {
+      font-size: 16px; font-weight: 700; color: var(--text-main); display: block;
+    }
+    .mini-stat-label {
+      font-size: 10px; color: var(--text-muted); display: block; margin-top: 1px;
+    }
+
+    /* ===== MENU LIST ===== */
+    .menu-card { padding: 6px 0; }
+    .menu-section-label {
+      font-size: 11px; font-weight: 700; color: var(--text-muted);
+      padding: 14px 16px 6px;
+      text-transform: uppercase; letter-spacing: 0.8px;
+    }
+    .menu-row {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 16px; cursor: pointer; border-radius: 10px; margin: 0 4px;
+      transition: background 0.15s;
+    }
+    .menu-row:hover { background: #f1f5f9; }
+    .menu-row:active { background: #e2e8f0; }
+    .menu-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; flex-shrink: 0;
+    }
+    .menu-icon.icon-blue { background: #dbeafe; color: var(--primary); }
+    .menu-icon.icon-green { background: var(--green-light); color: var(--green); }
+    .menu-icon.icon-amber { background: #fef3c7; color: #b45309; }
+    .menu-icon.icon-purple { background: #ede9fe; color: #7c3aed; }
+    .menu-row .menu-label { flex: 1; font-size: 14px; font-weight: 500; color: var(--text-main); }
+    .menu-row .menu-chevron { color: var(--text-muted); font-size: 13px; }
+    .menu-row.danger .menu-label { color: var(--red); font-weight: 600; }
+    .menu-row.danger .menu-chevron { color: var(--red); }
+    .menu-separator { height: 1px; background: var(--border); margin: 4px 16px; }
+
+    /* ===== BOTTOM SHEET ===== */
+    .sheet-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      z-index: 103; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    .sheet-overlay.active { opacity: 1; pointer-events: auto; }
+    .sheet {
+      position: fixed; left: 0; right: 0; bottom: 0;
+      background: var(--card-bg); border-radius: 20px 20px 0 0;
+      z-index: 104; transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+      max-height: 85vh; display: flex; flex-direction: column;
+      box-shadow: 0 -8px 30px rgba(0,0,0,0.15);
+    }
+    .sheet.active { transform: translateY(0); }
+    .sheet-handle {
+      width: 36px; height: 4px; border-radius: 2px;
+      background: #d1d5db; margin: 10px auto 0; flex-shrink: 0;
+    }
+    .sheet-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 20px 8px; flex-shrink: 0;
+    }
+    .sheet-header h4 { font-size: 16px; font-weight: 700; color: var(--text-main); }
+    .sheet-close {
+      width: 32px; height: 32px; border-radius: 50%; border: none;
+      background: #f1f5f9; color: var(--text-muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 14px;
+    }
+    .sheet-body {
+      padding: 8px 20px 24px; overflow-y: auto; flex: 1;
+    }
+
+    .settings-divider { border-top: 1px solid var(--border); margin: 18px 0; }
+    .btn-delete-small {
+      background: var(--red-light); color: var(--red); border: none;
+      padding: 7px 10px; border-radius: 8px; font-size: 12px;
+      font-weight: 600; cursor: pointer; display: flex; align-items: center;
+      gap: 5px; font-family: inherit;
+    }
+    .manage-item {
+      display: flex; justify-content: space-between; align-items: center;
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 14px; box-shadow: var(--shadow-sm);
+    }
+    .manage-item h4 { font-size: 14px; font-weight: 600; color: var(--text-main); margin-bottom: 2px; }
+    .manage-item p { font-size: 13px; color: var(--text-muted); }
+    .manage-item .manage-amount { font-size: 13px; font-weight: 700; color: var(--primary); }
+    .manage-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <div class="mobile-wrapper">
+
+    <header class="top-header" style="padding-bottom: 0;">
+      <div class="user-greeting">
+        <p>Akun Saya</p>
+        <h1>Profile</h1>
+      </div>
+    </header>
+
+    <div class="profile-content">
+
+      <!-- ===== KARTU IDENTITAS ===== -->
+      <section class="content-section" style="margin-top: 15px;">
+        <div class="card profile-card">
+          <div class="avatar-circle" id="avatar-initial">?</div>
+          <div class="profile-info">
+            <h2 id="profile-name">Memuat...</h2>
+            <p class="profile-email" id="profile-email">memuat@email.com</p>
+            <p class="profile-since" id="profile-since"><i class="fas fa-calendar-alt"></i> Member sejak -</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== MINI STATS ===== -->
+      <section class="content-section">
+        <div class="card mini-stats-card">
+          <div class="mini-stats">
+            <div class="mini-stat">
+              <div class="mini-stat-icon icon-green"><i class="fas fa-wallet"></i></div>
+              <span class="mini-stat-value" id="stat-wallet-count">0</span>
+              <span class="mini-stat-label">Dompet</span>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-icon icon-blue"><i class="fas fa-bullseye"></i></div>
+              <span class="mini-stat-value" id="stat-goal-count">0</span>
+              <span class="mini-stat-label">Target</span>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-icon icon-amber"><i class="fas fa-calculator"></i></div>
+              <span class="mini-stat-value" id="stat-plan-count">0</span>
+              <span class="mini-stat-label">Estimasi</span>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-icon icon-red"><i class="fas fa-receipt"></i></div>
+              <span class="mini-stat-value" id="stat-trx-count">0</span>
+              <span class="mini-stat-label">Transaksi</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== MENU LIST ===== -->
+      <section class="content-section">
+        <div class="card menu-card">
+          <div class="menu-section-label">Akun</div>
+          <div class="menu-row" onclick="openSheet('sheet-name')">
+            <div class="menu-icon icon-blue"><i class="fas fa-user"></i></div>
+            <span class="menu-label">Ubah Nama</span>
+            <i class="fas fa-chevron-right menu-chevron"></i>
+          </div>
+          <div class="menu-row" onclick="openSheet('sheet-password')">
+            <div class="menu-icon icon-amber"><i class="fas fa-key"></i></div>
+            <span class="menu-label">Ubah Password</span>
+            <i class="fas fa-chevron-right menu-chevron"></i>
+          </div>
+
+          <div class="menu-separator"></div>
+
+          <div class="menu-section-label">Manajemen Data</div>
+          <div class="menu-row" onclick="openSheet('sheet-wallets')">
+            <div class="menu-icon icon-green"><i class="fas fa-wallet"></i></div>
+            <span class="menu-label">Kelola Dompet</span>
+            <i class="fas fa-chevron-right menu-chevron"></i>
+          </div>
+          <div class="menu-row" onclick="openSheet('sheet-categories')">
+            <div class="menu-icon icon-purple"><i class="fas fa-tags"></i></div>
+            <span class="menu-label">Kelola Kategori</span>
+            <i class="fas fa-chevron-right menu-chevron"></i>
+          </div>
+
+          <div class="menu-separator"></div>
+
+          <div class="menu-row danger" onclick="confirmLogout()">
+            <div class="menu-icon icon-red"><i class="fas fa-sign-out-alt"></i></div>
+            <span class="menu-label">Keluar dari Akun</span>
+            <i class="fas fa-chevron-right menu-chevron"></i>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- ===== BOTTOM SHEET OVERLAY ===== -->
+    <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+
+    <!-- ===== SHEET: UBAH NAMA ===== -->
+    <div class="sheet" id="sheet-name">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <h4>Ubah Nama</h4>
+        <button class="sheet-close" onclick="closeSheet()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="sheet-body">
+        <form id="profile-name-form" class="inline-form">
+          <input type="text" id="profile_new_name" placeholder="Nama Lengkap" required>
+          <button type="submit" class="btn-primary">
+            <i class="fas fa-save"></i> Simpan Nama
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ===== SHEET: UBAH PASSWORD ===== -->
+    <div class="sheet" id="sheet-password">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <h4>Ubah Password</h4>
+        <button class="sheet-close" onclick="closeSheet()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="sheet-body">
+        <form id="profile-password-form" class="inline-form">
+          <input type="password" id="profile_new_password" placeholder="Password Baru (min. 6 karakter)" required>
+          <input type="password" id="profile_confirm_password" placeholder="Konfirmasi Password Baru" required>
+          <button type="submit" class="btn-primary">
+            <i class="fas fa-key"></i> Simpan Password
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ===== SHEET: KELOLA DOMPET ===== -->
+    <div class="sheet" id="sheet-wallets">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <h4>Kelola Dompet</h4>
+        <button class="sheet-close" onclick="closeSheet()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="sheet-body">
+        <form id="profile-wallet-form" class="inline-form">
+          <input type="text" id="profile_wallet_name" placeholder="Nama Dompet" required>
+          <input type="text" inputmode="numeric" id="profile_wallet_balance" placeholder="Saldo Awal (Rp)" required oninput="formatRupiah(this)">
+          <button type="submit" class="btn-primary">
+            <i class="fas fa-plus"></i> Tambah Dompet
+          </button>
+        </form>
+        <div id="profile-wallet-list" class="manage-list"></div>
+      </div>
+    </div>
+
+    <!-- ===== SHEET: KELOLA KATEGORI ===== -->
+    <div class="sheet" id="sheet-categories">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <h4>Kelola Kategori</h4>
+        <button class="sheet-close" onclick="closeSheet()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="sheet-body">
+        <form id="profile-category-form" class="inline-form">
+          <input type="text" id="profile_category_name" placeholder="Nama Kategori" required>
+          <select id="profile_category_type">
+            <option value="income">Pemasukan</option>
+            <option value="expense">Pengeluaran</option>
+          </select>
+          <button type="submit" class="btn-primary">
+            <i class="fas fa-plus"></i> Tambah Kategori
+          </button>
+        </form>
+        <div class="category-grid" style="margin-top: 16px;">
+          <div class="category-column">
+            <h4 class="text-green"><i class="fas fa-circle-arrow-down"></i> Pemasukan</h4>
+            <div id="profile-income-category-container"></div>
+          </div>
+          <div class="category-column">
+            <h4 class="text-red"><i class="fas fa-circle-arrow-up"></i> Pengeluaran</h4>
+            <div id="profile-expense-category-container"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== MODAL ALERT ===== -->
+    <div class="custom-modal-overlay" id="alert-modal-overlay"></div>
+    <div class="custom-modal" id="alert-modal">
+      <div class="modal-body" style="text-align: center; padding: 10px 0;">
+        <div id="alert-icon" style="font-size: 45px; color: var(--green); margin-bottom: 10px;"><i class="fas fa-check-circle"></i></div>
+        <h3 id="alert-title" style="font-size: 18px; color: var(--text-main); margin-bottom: 8px;">Berhasil</h3>
+        <p id="alert-message" style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Pesan di sini</p>
+        <button onclick="closeCustomAlert()" class="btn-primary" style="width: 100%; background: var(--primary);">OK Mengerti</button>
+      </div>
+    </div>
+
+    <!-- ===== MODAL KONFIRMASI ===== -->
+    <div class="custom-modal-overlay" id="confirm-modal-overlay"></div>
+    <div class="custom-modal" id="confirm-modal">
+      <div class="modal-body" style="text-align: center; padding: 10px 0;">
+        <div style="font-size: 45px; color: var(--red); margin-bottom: 10px;"><i class="fas fa-exclamation-circle"></i></div>
+        <h3 style="font-size: 18px; color: var(--text-main); margin-bottom: 8px;">Konfirmasi</h3>
+        <p id="confirm-message" style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Apakah Anda yakin?</p>
+        <div style="display: flex; gap: 10px;">
+          <button onclick="closeCustomConfirm(false)" style="flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; background: #f1f5f9; color: var(--text-muted);">Batal</button>
+          <button onclick="closeCustomConfirm(true)" style="flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; background: var(--red); color: white; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);">Ya, Keluar</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="dashboard.html" class="nav-item">
+      <i class="fas fa-home"></i>
+      <span>Home</span>
+    </a>
+    <a href="report.html" class="nav-item">
+      <i class="fas fa-chart-pie"></i>
+      <span>Laporan</span>
+    </a>
+
+    <div class="nav-item fab-wrapper">
+      <button class="fab" id="main-fab">
+        <i class="fas fa-plus"></i>
+      </button>
+      <div class="fab-menu" id="fab-menu">
+        <a href="income.html" class="fab-action btn-income"><i class="fas fa-arrow-down"></i> Pemasukan</a>
+        <a href="expense.html" class="fab-action btn-expense"><i class="fas fa-arrow-up"></i> Pengeluaran</a>
+        <a href="transfer.html" class="fab-action" style="background: var(--primary);"><i class="fas fa-exchange-alt"></i> Transfer</a>
+      </div>
+    </div>
+
+    <a href="planner.html" class="nav-item">
+      <i class="fas fa-chart-line"></i>
+      <span>Perencanaan</span>
+    </a>
+    <a href="profile.html" class="nav-item active">
+      <i class="fas fa-user-circle"></i>
+      <span>Profile</span>
+    </a>
+  </nav>
+
+  <div class="overlay" id="fab-overlay"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/profile.js"></script>
+
+  <script>
+    const fab = document.getElementById('main-fab');
+    const fabMenu = document.getElementById('fab-menu');
+    const overlay = document.getElementById('fab-overlay');
+
+    fab.addEventListener('click', () => {
+      fab.classList.toggle('active');
+      fabMenu.classList.toggle('active');
+      overlay.classList.toggle('active');
+    });
+
+    overlay.addEventListener('click', () => {
+      fab.classList.remove('active');
+      fabMenu.classList.remove('active');
+      overlay.classList.remove('active');
+    });
+  </script>
+</body>
+</html>

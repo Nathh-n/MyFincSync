@@ -42,6 +42,42 @@
     }
     .top-spend-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f1f5f9; }
     .top-spend-item:last-child { border-bottom: none; }
+    .btn-logout:hover { background: #dbeafe; color: var(--primary); }
+
+    /* PERIOD TOGGLE */
+    .period-toggle {
+      display: flex;
+      background: #eef2f7;
+      border-radius: 10px;
+      padding: 3px;
+      gap: 3px;
+      margin: 0 20px 16px 20px;
+    }
+    .period-btn {
+      flex: 1;
+      padding: 8px 0;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: 0.25s;
+    }
+    .period-btn.active {
+      background: white;
+      color: var(--primary);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    /* COLLAPSIBLE RIWAYAT */
+    .section-header.collapsible { cursor: pointer; user-select: none; }
+    #history-chevron { transition: transform 0.35s ease; }
+    #history-chevron.closed { transform: rotate(180deg); }
+    .history-collapse { overflow: hidden; transition: max-height 0.35s ease; max-height: 600px; }
+    .history-collapse.closed { max-height: 0; }
   </style>
 </head>
 <body>
@@ -53,8 +89,8 @@
         <p>Halo, Selamat Datang!</p>
         <h1 id="user-name">Dashboard</h1>
       </div>
-      <button onclick="logout()" class="btn-logout" title="Logout">
-        <i class="fas fa-sign-out-alt"></i>
+      <button onclick="window.location.href='profile.html'" class="btn-logout" title="Profile">
+        <i class="fas fa-user-circle"></i>
       </button>
     </header>
 
@@ -84,6 +120,11 @@
         </div>
       </div>
     </section>
+
+    <div class="period-toggle">
+      <button class="period-btn active" data-period="month" onclick="setPeriod('month')">Bulan Ini</button>
+      <button class="period-btn" data-period="all" onclick="setPeriod('all')">Semua Transaksi</button>
+    </div>
 
     <section class="content-section">
       <div class="section-header" style="margin-bottom: 10px;">
@@ -124,52 +165,24 @@
     </section>
 
     <section class="content-section">
-      <div class="section-header">
-        <h3>Riwayat Terakhir</h3>
-        <a href="report.html" class="link-see-all">Lihat Semua</a>
+      <div class="section-header collapsible" onclick="toggleHistory()">
+        <h3>
+          <i class="fas fa-chevron-down" id="history-chevron" style="font-size: 11px;"></i>
+          Riwayat Terakhir
+        </h3>
+        <a href="report.html" class="link-see-all" onclick="event.stopPropagation()">Lihat Semua</a>
       </div>
-      <div class="transaction-list" id="transaction-list">
-      </div>
-    </section>
-
-    <section class="content-section">
-      <div class="section-header">
-        <h3>Dompet Saya</h3>
-      </div>
-      <div class="card form-card">
-        <form id="wallet-form" class="inline-form">
-          <input type="text" id="wallet_name" placeholder="Nama Dompet" required>
-          <input type="text" inputmode="numeric" id="wallet_balance" placeholder="Saldo Awal (Rp)" required oninput="formatRupiah(this)">
-          <button type="submit" class="btn-primary"><i class="fas fa-plus"></i></button>
-        </form>
-      </div>
-      <div id="wallet-container" class="wallet-scroll-container">
+      <div class="history-collapse" id="history-content">
+        <div class="transaction-list" id="transaction-list">
+        </div>
       </div>
     </section>
 
     <section class="content-section" style="padding-bottom: 100px;">
       <div class="section-header">
-        <h3>Kategori</h3>
+        <h3>Dompet Saya</h3>
       </div>
-      <div class="card form-card">
-        <form id="category-form" class="inline-form">
-          <input type="text" id="category_name" placeholder="Nama Kategori" required>
-          <select id="category_type">
-            <option value="income">Pemasukan</option>
-            <option value="expense">Pengeluaran</option>
-          </select>
-          <button type="submit" class="btn-primary"><i class="fas fa-plus"></i></button>
-        </form>
-      </div>
-      <div class="category-grid">
-        <div class="category-column">
-          <h4 class="text-green"><i class="fas fa-circle-arrow-down"></i> Pemasukan</h4>
-          <div id="income-category-container"></div>
-        </div>
-        <div class="category-column">
-          <h4 class="text-red"><i class="fas fa-circle-arrow-up"></i> Pengeluaran</h4>
-          <div id="expense-category-container"></div>
-        </div>
+      <div id="wallet-container" class="wallet-scroll-container">
       </div>
     </section>
 
@@ -220,12 +233,12 @@
     </div>
 
     <a href="planner.html" class="nav-item">
-      <i class="fas fa-calculator"></i>
-      <span>Planner</span>
+      <i class="fas fa-chart-line"></i>
+      <span>Perencanaan</span>
     </a>
-    <a href="goals.html" class="nav-item">
-      <i class="fas fa-bullseye"></i>
-      <span>Target</span>
+    <a href="profile.html" class="nav-item">
+      <i class="fas fa-user-circle"></i>
+      <span>Profile</span>
     </a>
   </nav>
 
@@ -237,7 +250,6 @@
   <script src="js/auth.js"></script>
   <script src="js/dashboard.js"></script> 
   <script src="js/wallet.js"></script>
-  <script src="js/category.js"></script>
 
   <script>
     const fab = document.getElementById('main-fab');
