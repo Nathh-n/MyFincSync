@@ -14,6 +14,68 @@ function closeSheet() {
   document.body.style.overflow = '';
 }
 
+function initSheetDrag() {
+  const overlay = document.getElementById('sheet-overlay');
+
+  document.querySelectorAll('.sheet').forEach(sheet => {
+    const dragZones = [sheet.querySelector('.sheet-handle'), sheet.querySelector('.sheet-header')].filter(Boolean);
+
+    dragZones.forEach(zone => {
+      let startY = 0, currentY = 0, dragging = false, startTime = 0;
+
+      zone.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('.sheet-close')) return;
+        if (!sheet.classList.contains('active')) return;
+        dragging = true;
+        startY = e.clientY;
+        startTime = Date.now();
+        currentY = 0;
+        sheet.style.transition = 'none';
+        zone.setPointerCapture(e.pointerId);
+      });
+
+      zone.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        const delta = e.clientY - startY;
+        if (delta <= 0) return;
+        currentY = delta;
+        sheet.style.transform = `translateY(${delta}px)`;
+        const progress = Math.min(delta / (sheet.offsetHeight || 500), 1);
+        overlay.style.opacity = String(1 - progress * 0.6);
+      });
+
+      const snapBack = () => {
+        dragging = false;
+        sheet.style.transition = '';
+        sheet.style.transform = '';
+        overlay.style.opacity = '';
+      };
+
+      const dragClose = () => {
+        dragging = false;
+        sheet.style.transition = '';
+        overlay.style.opacity = '';
+        closeSheet();
+        sheet.style.transform = '';
+      };
+
+      zone.addEventListener('pointerup', (e) => {
+        if (!dragging) return;
+        const elapsed = Date.now() - startTime;
+        const isFlick = currentY > 40 && elapsed < 250;
+        const isFar = currentY > 100;
+        if (isFlick || isFar) {
+          dragClose();
+        } else {
+          snapBack();
+        }
+      });
+
+      zone.addEventListener('pointercancel', snapBack);
+    });
+  });
+}
+
 async function initProfile() {
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) {
@@ -368,3 +430,4 @@ if (profileCategoryForm) {
 initProfile();
 loadManageWallets();
 loadManageCategories();
+initSheetDrag();
