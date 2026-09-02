@@ -2,6 +2,9 @@
 
 Aplikasi pencatatan keuangan pribadi berbasis web (mobile-first) untuk mencatat pemasukan & pengeluaran, merencanakan budget, dan mewujudkan target tabungan — dengan dukungan pencatatan suara bertenaga AI.
 
+**Live:** [myfinsync.netlify.app](https://myfinsync.netlify.app)  
+**Repo:** [github.com/Nathh-n/MyFincSync](https://github.com/Nathh-n/MyFincSync)
+
 ## Fitur
 
 - **Autentikasi** — register, login, lupa/reset password via Supabase Auth
