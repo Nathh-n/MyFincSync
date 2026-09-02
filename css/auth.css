@@ -101,6 +101,7 @@ body {
 ========================= */
 .password-hint { font-size: 12px; color: #94a3b8; margin-top: 8px; display: flex; align-items: center; gap: 5px; }
 .password-hint.valid { color: #10b981; }
+.password-hint.error { color: var(--red); }
 
 .flex-between { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
 .remember-me { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); cursor: pointer; }

@@ -55,10 +55,18 @@ if (registerForm) {
     const full_name = document.getElementById('full_name').value;
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
+    const confirmPasswordEl = document.getElementById('confirm_password');
+    const confirmPassword = confirmPasswordEl ? confirmPasswordEl.value : '';
 
     // Validasi Panjang Password dengan Custom Alert
     if (password.length < 6) {
       showAuthAlert('Peringatan', 'Maaf, password harus memiliki minimal 6 karakter!', 'error');
+      return;
+    }
+
+    // Validasi Konfirmasi Password
+    if (confirmPasswordEl && password !== confirmPassword) {
+      showAuthAlert('Peringatan', 'Konfirmasi password tidak cocok!', 'error');
       return;
     }
 

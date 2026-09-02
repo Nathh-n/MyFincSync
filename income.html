@@ -6,6 +6,8 @@
   <title>Catat Pemasukan</title>
     
   <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#3b82f6">
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="css/dashboard.css">
@@ -222,5 +224,6 @@
   <script>
     document.getElementById('transaction_date').valueAsDate = new Date();
   </script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js');}</script>
 </body>
 </html>

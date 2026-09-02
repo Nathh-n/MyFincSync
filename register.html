@@ -6,6 +6,8 @@
   <title>Daftar - MyFinSync</title>
     
   <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#3b82f6">
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="css/auth.css">
@@ -52,6 +54,20 @@
           </div>
         </div>
 
+        <div class="form-group">
+          <label>Konfirmasi Password</label>
+          <div class="input-group">
+            <i class="fas fa-lock input-icon"></i>
+            <input type="password" id="confirm_password" class="form-control" placeholder="Ulangi password yang sama" required oninput="checkPasswordStrength()">
+            <button type="button" class="toggle-password" onclick="togglePassword('confirm_password', this)">
+              <i class="far fa-eye"></i>
+            </button>
+          </div>
+          <div class="password-hint" id="confirm-hint">
+            <i class="fas fa-info-circle"></i> Ulangi password di atas
+          </div>
+        </div>
+
         <button type="submit" class="btn-primary" style="margin-top: 10px;">
           Daftar Akun <i class="fas fa-user-plus" style="margin-left: 5px;"></i>
         </button>
@@ -93,17 +109,34 @@
 
     function checkPasswordStrength() {
       const pass = document.getElementById('password').value;
+      const confirmPass = document.getElementById('confirm_password').value;
       const hint = document.getElementById('pass-hint');
-      
-      if(pass.length >= 6) {
+      const confirmHint = document.getElementById('confirm-hint');
+
+      if (pass.length >= 6) {
         hint.innerHTML = '<i class="fas fa-check-circle"></i> Password sudah aman';
         hint.classList.add('valid');
       } else {
         hint.innerHTML = '<i class="fas fa-info-circle"></i> Minimal 6 karakter';
         hint.classList.remove('valid');
       }
+
+      if (confirmPass.length === 0) {
+        confirmHint.innerHTML = '<i class="fas fa-info-circle"></i> Ulangi password di atas';
+        confirmHint.classList.remove('valid');
+        confirmHint.classList.remove('error');
+      } else if (pass === confirmPass) {
+        confirmHint.innerHTML = '<i class="fas fa-check-circle"></i> Password cocok';
+        confirmHint.classList.add('valid');
+        confirmHint.classList.remove('error');
+      } else {
+        confirmHint.innerHTML = '<i class="fas fa-times-circle"></i> Password tidak cocok';
+        confirmHint.classList.remove('valid');
+        confirmHint.classList.add('error');
+      }
     }
   </script>
 
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js');}</script>
 </body>
 </html>

@@ -6,6 +6,8 @@
   <title>MyFinSync - Pencatatan Keuangan</title>
     
   <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#3b82f6">
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
@@ -19,6 +21,9 @@
       --primary: #3b82f6;
       --primary-hover: #2563eb;
       --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --green: #10b981;
+      --red: #ef4444;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
@@ -27,7 +32,7 @@
       background: var(--bg-color);
       display: flex;
       justify-content: center;
-      align-items: center;
+      align-items: flex-start;
       min-height: 100vh;
       color: var(--text-main);
     }
@@ -62,66 +67,335 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      padding: 40px 30px;
+      padding: 24px 20px 16px;
       text-align: center;
     }
 
     /* Ikon Logo Besar di Tengah */
     .hero-icon {
-      width: 100px;
-      height: 100px;
+      width: 64px;
+      height: 64px;
       background: linear-gradient(135deg, var(--primary), #60a5fa);
       color: white;
-      border-radius: 28px;
+      border-radius: 20px;
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 40px;
-      margin: 0 auto 30px auto;
-      box-shadow: 0 15px 30px rgba(59, 130, 246, 0.3);
-      transform: rotate(-5deg); /* Efek miring sedikit agar dinamis */
+      font-size: 26px;
+      margin: 0 auto 12px auto;
+      box-shadow: 0 12px 24px rgba(59, 130, 246, 0.3);
+      transform: rotate(-5deg);
     }
 
     h1 {
-      font-size: 34px;
+      font-size: 28px;
       font-weight: 800;
       letter-spacing: -1px;
-      margin-bottom: 15px;
+      margin-bottom: 8px;
       color: var(--text-main);
     }
 
-    p {
-      font-size: 15px;
+    .tagline {
+      font-size: 13px;
       color: var(--text-muted);
-      line-height: 1.6;
-      margin-bottom: 40px;
+      line-height: 1.5;
+      margin-bottom: 16px;
     }
 
-    /* Daftar Fitur Unggulan */
+    /* =========================
+       CAROUSEL SNEAK PEEK
+    ========================= */
+    .peek-section {
+      position: relative;
+      margin-bottom: 12px;
+    }
+
+    .peek-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      padding: 0 4px;
+    }
+    .peek-header h2 {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .peek-header h2 i { color: var(--primary); font-size: 13px; }
+    .peek-nav {
+      display: flex;
+      gap: 8px;
+    }
+    .peek-arrow {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: white;
+      color: var(--text-main);
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: 0.2s;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .peek-arrow:active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    .peek-track {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      gap: 14px;
+      padding: 4px;
+    }
+    .peek-track::-webkit-scrollbar { display: none; }
+
+    .peek-slide {
+      min-width: 84%;
+      scroll-snap-align: center;
+      flex-shrink: 0;
+    }
+
+    /* Frame HP */
+    .peek-phone {
+      background: #f1f5f9;
+      border: 6px solid #cbd5e1;
+      border-radius: 26px;
+      padding: 10px;
+      box-shadow: 0 10px 22px rgba(59, 130, 246, 0.08);
+      margin-bottom: 10px;
+      animation: float 4s ease-in-out infinite;
+    }
+    .peek-phone.slow { animation-delay: 2s; }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    .phone-screen {
+      background: white;
+      border-radius: 18px;
+      padding: 12px;
+      text-align: left;
+      min-height: 320px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Status bar dalam mockup */
+    .m-status {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .m-status .notch {
+      width: 46px;
+      height: 8px;
+      background: #0f172a;
+      border-radius: 99px;
+      margin: 0 auto;
+    }
+    .m-status .time { font-size: 9px; font-weight: 700; color: var(--text-main); }
+
+    /* Kartu saldo (Dashboard) */
+    .m-balance {
+      background: linear-gradient(135deg, #3b82f6, #60a5fa);
+      border-radius: 14px;
+      padding: 10px;
+      color: white;
+      margin-bottom: 8px;
+    }
+    .m-balance .label { font-size: 9px; opacity: 0.85; display: flex; justify-content: space-between; align-items: center; }
+    .m-balance .amount { font-size: 17px; font-weight: 800; margin: 4px 0 8px; }
+    .m-badges { display: flex; gap: 6px; }
+    .m-badge { flex: 1; background: rgba(255,255,255,0.15); border-radius: 8px; padding: 6px; }
+    .m-badge p { font-size: 7px; opacity: 0.85; }
+    .m-badge b { font-size: 10px; font-weight: 800; }
+
+    /* Donut chart */
+    .m-donut-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+    .m-donut {
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      background: conic-gradient(#10b981 0 65%, #ef4444 65% 100%);
+      position: relative;
+      flex-shrink: 0;
+    }
+    .m-donut::after {
+      content: '';
+      position: absolute;
+      inset: 12px;
+      background: white;
+      border-radius: 50%;
+    }
+    .m-legend { display: flex; flex-direction: column; gap: 4px; }
+    .m-legend span { font-size: 9px; color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
+    .m-legend i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .m-legend b { color: var(--text-main); }
+
+    /* Baris transaksi mockup */
+    .m-trx { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid #f1f5f9; }
+    .m-trx:last-child { border-bottom: none; }
+    .m-trx .dot { width: 24px; height: 24px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 9px; }
+    .m-trx .dot.g { background: #d1fae5; color: var(--green); }
+    .m-trx .dot.r { background: #fee2e2; color: var(--red); }
+    .m-trx .info { flex: 1; margin-left: 8px; }
+    .m-trx .info b { display: block; font-size: 9px; color: var(--text-main); }
+    .m-trx .info small { font-size: 7px; color: var(--text-muted); }
+    .m-trx .amt { font-size: 9px; font-weight: 700; }
+    .m-trx .amt.g { color: var(--green); }
+    .m-trx .amt.r { color: var(--red); }
+
+    /* Mini bottom nav */
+    .m-nav {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 8px 4px 2px;
+      border-top: 1px solid #f1f5f9;
+      margin-top: 10px;
+    }
+    .m-nav span { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 6px; color: var(--text-muted); }
+    .m-nav span i { font-size: 10px; }
+    .m-nav span.active { color: var(--primary); }
+    .m-nav .fab { width: 26px; height: 26px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+    .m-nav { margin-top: auto; }
+
+    /* Ringkasan mockup (Laporan) */
+    .m-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .m-head b { font-size: 11px; color: var(--text-main); }
+    .m-chip { font-size: 7px; background: #eef2f7; padding: 4px 8px; border-radius: 99px; color: var(--text-main); font-weight: 600; }
+    .m-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px; }
+    .m-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 7px; text-align: center; }
+    .m-box p { font-size: 7px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+    .m-box b { font-size: 11px; font-weight: 800; }
+    .m-box .g { color: var(--green); }
+    .m-box .r { color: var(--red); }
+    .m-box.net { grid-column: 1 / -1; background: linear-gradient(135deg, #f8fafc, #f1f5f9); }
+    .m-box.net b { color: var(--primary); }
+
+    /* Target mockup */
+    .m-goal { border: 1px solid var(--border); border-radius: 12px; padding: 9px; margin-bottom: 6px; }
+    .m-goal .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .m-goal .row b { font-size: 10px; color: var(--text-main); }
+    .m-goal .row small { font-size: 7px; color: var(--text-muted); }
+    .m-bar { height: 6px; background: #f1f5f9; border-radius: 99px; overflow: hidden; margin-bottom: 9px; }
+    .m-bar > div { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #0ea5e9, #3b82f6); width: 62%; }
+    .m-actions { display: flex; gap: 7px; }
+    .m-actions .btn { flex: 1; padding: 7px; border-radius: 8px; font-size: 8px; font-weight: 700; text-align: center; }
+    .m-actions .btn.g { background: #d1fae5; color: var(--green); }
+    .m-actions .btn.y { background: #fef3c7; color: #b45309; }
+
+    /* Planner mockup */
+    .m-target-card { border-radius: 12px; padding: 9px; color: white; margin-bottom: 6px; }
+    .m-target-card p { font-size: 7px; opacity: 0.9; }
+    .m-target-card b { font-size: 13px; font-weight: 800; }
+    .m-target-card.purple { background: linear-gradient(135deg, #8b5cf6, #c084fc); }
+    .m-target-card.amber { background: linear-gradient(135deg, #f59e0b, #fcd34d); }
+
+    /* Transfer mockup */
+    .m-transfer-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 9px; margin-bottom: 6px; }
+    .m-transfer-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 6px; }
+    .m-wallet { flex: 1; background: white; border: 1px solid var(--border); border-radius: 9px; padding: 8px; text-align: center; }
+    .m-wallet i { color: var(--primary); font-size: 11px; margin-bottom: 2px; display: block; }
+    .m-wallet b { font-size: 9px; display: block; color: var(--text-main); }
+    .m-wallet small { font-size: 7px; color: var(--text-muted); }
+    .m-arrow { color: var(--primary); font-size: 13px; }
+    .m-field { background: white; border: 1px solid var(--border); border-radius: 9px; padding: 8px 10px; font-size: 11px; font-weight: 700; color: var(--primary); margin-bottom: 6px; }
+    .m-submit { background: var(--primary); color: white; border-radius: 10px; padding: 10px; font-size: 10px; font-weight: 800; text-align: center; box-shadow: 0 6px 14px rgba(59,130,246,0.3); }
+
+    /* Caption slide */
+    .peek-caption { text-align: center; }
+    .peek-caption b { display: block; font-size: 12px; color: var(--text-main); }
+    .peek-caption small { font-size: 10px; color: var(--text-muted); }
+
+    /* Slide Fitur Unggulan */
+    .feature-slide-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 26px;
+      padding: 14px;
+      box-shadow: 0 10px 22px rgba(59, 130, 246, 0.08);
+      animation: float 4s ease-in-out infinite;
+      min-height: 320px;
+      display: flex;
+      flex-direction: column;
+    }
+    .feature-slide-card .fs-title {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 10px;
+    }
+    .feature-slide-card .fs-title i { color: var(--primary); font-size: 14px; }
+    .feature-list { display: flex; flex-direction: column; gap: 8px; }
+    .feature-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg-color);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 9px 12px;
+    }
+    .feature-row i {
+      font-size: 16px;
+      width: 34px;
+      height: 34px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+    }
+    .feature-row span { font-size: 12px; font-weight: 600; color: var(--text-main); line-height: 1.3; }
+
+    /* Dots */
+    .peek-dots { display: flex; justify-content: center; gap: 6px; margin-top: 8px; }
+    .peek-dot { width: 8px; height: 8px; border-radius: 99px; background: #e2e8f0; border: none; cursor: pointer; transition: 0.3s; padding: 0; }
+    .peek-dot.active { background: var(--primary); width: 18px; }
+
+    /* =========================
+       DAFTAR FITUR
+    ========================= */
     .features {
       display: flex;
       flex-direction: column;
-      gap: 15px;
-      margin-bottom: 50px;
+      gap: 11px;
+      margin-bottom: 32px;
       text-align: left;
     }
 
     .feature-item {
       display: flex;
       align-items: center;
-      gap: 15px;
-      padding: 15px;
+      gap: 13px;
+      padding: 13px;
       background: var(--bg-color);
-      border-radius: 16px;
+      border-radius: 14px;
       border: 1px solid #e2e8f0;
     }
 
     .feature-item i {
-      font-size: 20px;
+      font-size: 16px;
       background: white;
-      width: 40px;
-      height: 40px;
+      width: 36px;
+      height: 36px;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -131,7 +405,7 @@
 
     .feature-item span {
       font-weight: 600;
-      font-size: 14px;
+      font-size: 13px;
       color: var(--text-main);
     }
 
@@ -139,41 +413,45 @@
     .btn-primary {
       display: block;
       width: 100%;
-      padding: 18px;
+      padding: 14px;
       background: var(--primary);
       color: white;
       border: none;
-      border-radius: 16px;
-      font-size: 16px;
+      border-radius: 14px;
+      font-size: 14px;
       font-weight: 700;
       text-decoration: none;
-      margin-bottom: 15px;
+      margin-bottom: 10px;
       transition: 0.3s;
       box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
     }
 
-    .btn-primary:hover {
-      background: var(--primary-hover);
-      transform: translateY(-2px);
-    }
+    .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); }
 
     .btn-secondary {
       display: block;
       width: 100%;
-      padding: 18px;
+      padding: 14px;
       background: white;
       color: var(--primary);
       border: 2px solid var(--primary);
-      border-radius: 16px;
-      font-size: 16px;
+      border-radius: 14px;
+      font-size: 14px;
       font-weight: 700;
       text-decoration: none;
       transition: 0.3s;
     }
 
-    .btn-secondary:hover {
-      background: var(--bg-color);
+    .btn-secondary:hover { background: var(--bg-color); }
+
+    footer {
+      margin-top: 20px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      text-align: center;
     }
+    footer p { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+    footer small { font-size: 10px; color: #94a3b8; }
   </style>
 </head>
 <body>
@@ -187,16 +465,280 @@
       </div>
       
       <h1>MyFinSync</h1>
-      <p>Aplikasi cerdas untuk mencatat pengeluaran, merencanakan budget, dan mewujudkan target tabunganmu dengan mudah.</p>
-      
-      <div class="features">
-        <div class="feature-item">
-          <i class="fas fa-chart-pie" style="color: #3b82f6;"></i>
-          <span>Pantau Pemasukan & Pengeluaran</span>
+      <p class="tagline">Aplikasi cerdas untuk mencatat pengeluaran, merencanakan budget, dan mewujudkan target tabunganmu dengan mudah.</p>
+
+      <!-- CAROUSEL SNEAK PEEK -->
+      <div class="peek-section">
+        <div class="peek-header">
+          <h2><i class="fas fa-mobile-alt"></i> Intip Aplikasinya</h2>
+          <div class="peek-nav">
+            <button class="peek-arrow" onclick="peekGo(-1)" aria-label="Sebelumnya"><i class="fas fa-chevron-left"></i></button>
+            <button class="peek-arrow" onclick="peekGo(1)" aria-label="Berikutnya"><i class="fas fa-chevron-right"></i></button>
+          </div>
         </div>
-        <div class="feature-item">
-          <i class="fas fa-bullseye" style="color: #10b981;"></i>
-          <span>Kelola dan Capai Target Tabungan</span>
+
+        <div class="peek-track" id="peek-track">
+
+          <!-- SLIDE 1: FITUR 1-4 -->
+          <div class="peek-slide">
+            <div class="feature-slide-card">
+              <div class="fs-title"><i class="fas fa-star"></i> Fitur Unggulan</div>
+              <div class="feature-list">
+                <div class="feature-row">
+                  <i class="fas fa-microphone" style="color: #8b5cf6;"></i>
+                  <span>Catat Transaksi Pakai Suara (AI)</span>
+                </div>
+                <div class="feature-row">
+                  <i class="fas fa-chart-pie" style="color: #3b82f6;"></i>
+                  <span>Pantau Pemasukan & Pengeluaran</span>
+                </div>
+                <div class="feature-row">
+                  <i class="fas fa-exchange-alt" style="color: #0ea5e9;"></i>
+                  <span>Transfer Antar Dompet</span>
+                </div>
+                <div class="feature-row">
+                  <i class="fas fa-file-csv" style="color: #16a34a;"></i>
+                  <span>Laporan & Export CSV</span>
+                </div>
+              </div>
+            </div>
+            <div class="peek-caption"><b>Fitur Unggulan</b><small>Geser untuk melihat preview aplikasi</small></div>
+          </div>
+
+          <!-- SLIDE 2: FITUR 5-8 -->
+          <div class="peek-slide">
+            <div class="feature-slide-card slow">
+              <div class="fs-title"><i class="fas fa-star"></i> Fitur Unggulan</div>
+              <div class="feature-list">
+                <div class="feature-row">
+                  <i class="fas fa-chart-line" style="color: #f59e0b;"></i>
+                  <span>Budget Planner Harian & Bulanan</span>
+                </div>
+                <div class="feature-row">
+                  <i class="fas fa-wallet" style="color: #10b981;"></i>
+                  <span>Kelola Banyak Dompet</span>
+                </div>
+                <div class="feature-row">
+                  <i class="fas fa-bullseye" style="color: #ec4899;"></i>
+                  <span>Target Tabungan & Progress</span>
+                </div>
+                <div class="feature-row">
+                  <i class="fas fa-chart-bar" style="color: #6366f1;"></i>
+                  <span>Grafik & Analisis Keuangan</span>
+                </div>
+              </div>
+            </div>
+            <div class="peek-caption"><b>Fitur Unggulan</b><small>Geser untuk melihat preview aplikasi</small></div>
+          </div>
+
+          <!-- SLIDE 3: DASHBOARD -->
+          <div class="peek-slide">
+            <div class="peek-phone">
+              <div class="phone-screen">
+                <div class="m-status">
+                  <span class="time">09:41</span>
+                  <span class="notch"></span>
+                </div>
+                <div class="m-balance">
+                  <div class="label"><span>Total Saldo</span><i class="fas fa-eye"></i></div>
+                  <div class="amount">Rp 5.240.000</div>
+                  <div class="m-badges">
+                    <div class="m-badge"><p>Pemasukan</p><b>+Rp 3.500.000</b></div>
+                    <div class="m-badge"><p>Pengeluaran</p><b>-Rp 2.100.000</b></div>
+                  </div>
+                </div>
+                <div class="m-donut-wrap">
+                  <div class="m-donut"></div>
+                  <div class="m-legend">
+                    <span><i style="background:#10b981;"></i> Pemasukan <b>65%</b></span>
+                    <span><i style="background:#ef4444;"></i> Pengeluaran <b>35%</b></span>
+                  </div>
+                </div>
+                <div class="m-trx">
+                  <div class="dot g"><i class="fas fa-arrow-down"></i></div>
+                  <div class="info"><b>Gaji Bulanan</b><small>01 Sep 2026 • Dompet Utama</small></div>
+                  <span class="amt g">+Rp 3.500.000</span>
+                </div>
+                <div class="m-trx">
+                  <div class="dot r"><i class="fas fa-arrow-up"></i></div>
+                  <div class="info"><b>Makan Siang</b><small>02 Sep 2026 • E-Wallet</small></div>
+                  <span class="amt r">-Rp 25.000</span>
+                </div>
+                <div class="m-nav">
+                  <span class="active"><i class="fas fa-home"></i>Home</span>
+                  <span><i class="fas fa-chart-pie"></i>Laporan</span>
+                  <span class="fab"><i class="fas fa-plus"></i></span>
+                  <span><i class="fas fa-chart-line"></i>Planner</span>
+                  <span><i class="fas fa-user-circle"></i>Profile</span>
+                </div>
+              </div>
+            </div>
+            <div class="peek-caption"><b>Dashboard Lengkap</b><small>Saldo, grafik, & riwayat dalam satu layar</small></div>
+          </div>
+
+          <!-- SLIDE 2: LAPORAN -->
+          <div class="peek-slide">
+            <div class="peek-phone slow">
+              <div class="phone-screen">
+                <div class="m-status">
+                  <span class="time">09:41</span>
+                  <span class="notch"></span>
+                </div>
+                <div class="m-head">
+                  <b>Laporan</b>
+                  <span class="m-chip">Bulan Ini</span>
+                </div>
+                <div class="m-grid">
+                  <div class="m-box"><p>Pemasukan</p><b class="g">+Rp 5.200.000</b></div>
+                  <div class="m-box"><p>Pengeluaran</p><b class="r">-Rp 3.100.000</b></div>
+                  <div class="m-box net"><p>Arus Kas Bersih</p><b>+Rp 2.100.000</b></div>
+                </div>
+                <div class="m-trx">
+                  <div class="dot g"><i class="fas fa-arrow-down"></i></div>
+                  <div class="info"><b>Gaji Bulanan</b><small>01 Sep • Pemasukan</small></div>
+                  <span class="amt g">+Rp 3.500.000</span>
+                </div>
+                <div class="m-trx">
+                  <div class="dot r"><i class="fas fa-arrow-up"></i></div>
+                  <div class="info"><b>Belanja Bulanan</b><small>02 Sep • Pengeluaran</small></div>
+                  <span class="amt r">-Rp 800.000</span>
+                </div>
+                <div class="m-nav">
+                  <span><i class="fas fa-home"></i>Home</span>
+                  <span class="active"><i class="fas fa-chart-pie"></i>Laporan</span>
+                  <span class="fab"><i class="fas fa-plus"></i></span>
+                  <span><i class="fas fa-chart-line"></i>Planner</span>
+                  <span><i class="fas fa-user-circle"></i>Profile</span>
+                </div>
+              </div>
+            </div>
+            <div class="peek-caption"><b>Rekap & Analisis</b><small>Ringkasan tiap periode + export CSV</small></div>
+          </div>
+
+          <!-- SLIDE 3: TARGET TABUNGAN -->
+          <div class="peek-slide">
+            <div class="peek-phone">
+              <div class="phone-screen">
+                <div class="m-status">
+                  <span class="time">09:41</span>
+                  <span class="notch"></span>
+                </div>
+                <div class="m-head">
+                  <b>Target Tabungan</b>
+                </div>
+                <div class="m-goal">
+                  <div class="row">
+                    <b>HP Baru</b>
+                    <small>Rp 7.500.000 / Rp 12.000.000</small>
+                  </div>
+                  <div class="m-bar"><div></div></div>
+                  <div class="m-actions">
+                    <div class="btn g"><i class="fas fa-plus"></i> Nabung</div>
+                    <div class="btn y"><i class="fas fa-minus"></i> Tarik</div>
+                  </div>
+                </div>
+                <div class="m-goal">
+                  <div class="row">
+                    <b>Liburan Bali</b>
+                    <small>Rp 2.000.000 / Rp 5.000.000</small>
+                  </div>
+                  <div class="m-bar"><div style="width:40%; background:linear-gradient(90deg,#10b981,#34d399);"></div></div>
+                  <div class="m-actions">
+                    <div class="btn g"><i class="fas fa-plus"></i> Nabung</div>
+                    <div class="btn y"><i class="fas fa-minus"></i> Tarik</div>
+                  </div>
+                </div>
+                <div class="m-nav">
+                  <span><i class="fas fa-home"></i>Home</span>
+                  <span><i class="fas fa-chart-pie"></i>Laporan</span>
+                  <span class="fab"><i class="fas fa-plus"></i></span>
+                  <span class="active"><i class="fas fa-bullseye"></i>Target</span>
+                  <span><i class="fas fa-user-circle"></i>Profile</span>
+                </div>
+              </div>
+            </div>
+            <div class="peek-caption"><b>Wujudkan Impian</b><small>Pantau progress tabunganmu</small></div>
+          </div>
+
+          <!-- SLIDE 4: PLANNER -->
+          <div class="peek-slide">
+            <div class="peek-phone slow">
+              <div class="phone-screen">
+                <div class="m-status">
+                  <span class="time">09:41</span>
+                  <span class="notch"></span>
+                </div>
+                <div class="m-head">
+                  <b>Perencanaan</b>
+                </div>
+                <div class="m-target-card purple">
+                  <p>Target Pendapatan Bulanan</p>
+                  <b>Rp 4.500.000</b>
+                </div>
+                <div class="m-target-card amber">
+                  <p>Target Pendapatan Harian</p>
+                  <b>Rp 150.000</b>
+                </div>
+                <div class="m-trx">
+                  <div class="dot g" style="background:#ede9fe; color:#7c3aed;"><i class="fas fa-wifi"></i></div>
+                  <div class="info"><b>Kuota Internet</b><small>Rp 100.000 x 30 hari /bln</small></div>
+                  <span class="amt g" style="color:#7c3aed;">Rp 3.000.000</span>
+                </div>
+                <div class="m-nav">
+                  <span><i class="fas fa-home"></i>Home</span>
+                  <span><i class="fas fa-chart-pie"></i>Laporan</span>
+                  <span class="fab"><i class="fas fa-plus"></i></span>
+                  <span class="active"><i class="fas fa-chart-line"></i>Planner</span>
+                  <span><i class="fas fa-user-circle"></i>Profile</span>
+                </div>
+              </div>
+            </div>
+            <div class="peek-caption"><b>Rencanakan Budget</b><small>Target harian & bulanan otomatis</small></div>
+          </div>
+
+          <!-- SLIDE 5: TRANSFER -->
+          <div class="peek-slide">
+            <div class="peek-phone">
+              <div class="phone-screen">
+                <div class="m-status">
+                  <span class="time">09:41</span>
+                  <span class="notch"></span>
+                </div>
+                <div class="m-head">
+                  <b>Transfer</b>
+                </div>
+                <div class="m-transfer-box">
+                  <div class="m-transfer-row">
+                    <div class="m-wallet"><i class="fas fa-wallet"></i><b>Dompet Utama</b><small>Rp 3.200.000</small></div>
+                    <span class="m-arrow"><i class="fas fa-arrow-right"></i></span>
+                    <div class="m-wallet"><i class="fas fa-piggy-bank"></i><b>E-Wallet</b><small>Rp 800.000</small></div>
+                  </div>
+                </div>
+                <div class="m-field"><i class="fas fa-coins"></i> &nbsp;Rp 500.000</div>
+                <div class="m-field" style="color: var(--text-muted);"><i class="fas fa-receipt"></i> &nbsp;Biaya Admin: Rp 0</div>
+                <div class="m-submit"><i class="fas fa-exchange-alt"></i> Proses Transfer</div>
+                <div class="m-nav">
+                  <span><i class="fas fa-home"></i>Home</span>
+                  <span><i class="fas fa-chart-pie"></i>Laporan</span>
+                  <span class="fab"><i class="fas fa-plus"></i></span>
+                  <span><i class="fas fa-chart-line"></i>Planner</span>
+                  <span><i class="fas fa-user-circle"></i>Profile</span>
+                </div>
+              </div>
+            </div>
+            <div class="peek-caption"><b>Pindah Saldo Mudah</b><small>Transfer antar dompet + biaya admin</small></div>
+          </div>
+
+        </div>
+
+        <div class="peek-dots" id="peek-dots">
+          <button class="peek-dot active" onclick="peekTo(0)" aria-label="Fitur 1"></button>
+          <button class="peek-dot" onclick="peekTo(1)" aria-label="Fitur 2"></button>
+          <button class="peek-dot" onclick="peekTo(2)" aria-label="Dashboard"></button>
+          <button class="peek-dot" onclick="peekTo(3)" aria-label="Laporan"></button>
+          <button class="peek-dot" onclick="peekTo(4)" aria-label="Target"></button>
+          <button class="peek-dot" onclick="peekTo(5)" aria-label="Planner"></button>
+          <button class="peek-dot" onclick="peekTo(6)" aria-label="Transfer"></button>
         </div>
       </div>
       
@@ -204,8 +746,76 @@
         <a href="register.html" class="btn-primary">Mulai Sekarang <i class="fas fa-arrow-right" style="margin-left: 5px;"></i></a>
         <a href="login.html" class="btn-secondary">Masuk ke Akun Saya</a>
       </div>
+
+      <footer>
+        <p>MyFinSync</p>
+        <small>© 2026 MyFinSync.</small>
+      </footer>
     </div>
   </div>
 
+  <script>
+    const track = document.getElementById('peek-track');
+    const slides = track.querySelectorAll('.peek-slide');
+    const dots = document.querySelectorAll('.peek-dot');
+    let peekIndex = 0;
+    let peekTimer = null;
+    let userInteracting = false;
+
+    function peekGo(dir) {
+      peekTo(peekIndex + dir);
+    }
+
+    function peekTo(i) {
+      peekIndex = (i + slides.length) % slides.length;
+      track.scrollTo({ left: slides[peekIndex].offsetLeft - 4, behavior: 'smooth' });
+      updatePeekDots();
+    }
+
+    function updatePeekDots() {
+      dots.forEach((d, idx) => d.classList.toggle('active', idx === peekIndex));
+    }
+
+    function startPeekAuto() {
+      stopPeekAuto();
+      peekTimer = setInterval(() => {
+        if (!userInteracting) peekTo(peekIndex + 1);
+      }, 4000);
+    }
+
+    function stopPeekAuto() { clearInterval(peekTimer); }
+
+    // Sinkron saat scroll manual (swipe)
+    track.addEventListener('scroll', () => {
+      const scrollPos = track.scrollLeft + 4;
+      let closest = 0;
+      slides.forEach((s, idx) => {
+        if (Math.abs(s.offsetLeft - scrollPos) < Math.abs(slides[closest].offsetLeft - scrollPos)) closest = idx;
+      });
+      if (closest !== peekIndex) { peekIndex = closest; updatePeekDots(); }
+    });
+
+    // Jeda auto-scroll saat user berinteraksi
+    track.addEventListener('pointerdown', () => {
+      userInteracting = true;
+      stopPeekAuto();
+    });
+    track.addEventListener('touchstart', () => {
+      userInteracting = true;
+      stopPeekAuto();
+    });
+    document.addEventListener('pointerup', () => {
+      if (userInteracting) {
+        setTimeout(() => {
+          userInteracting = false;
+          startPeekAuto();
+        }, 2500);
+      }
+    });
+
+    startPeekAuto();
+  </script>
+
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js');}</script>
 </body>
 </html>
