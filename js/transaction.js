@@ -44,7 +44,10 @@ async function loadCategories(userId, type) {
 // ==========================================
 function addItemRow(data) {
   const tpl = document.getElementById('item-template');
-  if (!tpl) return;
+  if (!tpl) {
+    console.error('[addItemRow] Template #item-template tidak ditemukan. Versi HTML dan JS tidak sinkron (coba hard-refresh / clear cache).');
+    return;
+  }
   const clone = tpl.content.cloneNode(true);
   const row = clone.querySelector('.item-row');
 
@@ -344,5 +347,5 @@ function setupFormSubmit() {
   });
 }
 
-// Jalankan Inisialisasi
-initTransactionForm();
+// Jalankan Inisialisasi (dengan log error agar kegagalan tidak senyap)
+initTransactionForm().catch(e => console.error('[initTransactionForm] Gagal inisialisasi form:', e));

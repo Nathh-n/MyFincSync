@@ -1,5 +1,7 @@
 // MyFinSync Service Worker - PWA Offline Support
-const CACHE_NAME = 'myfinsync-v1';
+// Bump versi cache ini SETIAP deploy agar cache lama tidak dipakai ulang
+// (mencegah kombinasi HTML baru + JS lama yang membuat tombol mati).
+const CACHE_NAME = 'myfinsync-v2';
 
 // Aset statis aplikasi yang akan di-cache saat install
 const APP_SHELL = [
@@ -75,7 +77,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Aset statis lainnya: cache-first
+  // Aset statis lainnya: stale-while-revalidate.
+  // Sajikan cache langsung, tapi minta versi terbaru di background.
+  // Karena CACHE_NAME di-bump tiap deploy, cache lama otomatis terhapus,
+  // jadi aset yang disajikan adalah versi baru.
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const fetched = fetch(event.request)
