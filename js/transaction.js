@@ -2,17 +2,84 @@
 // API key disimpan di server (supabase secrets), tidak terekspos ke client.
 // Deploy: cd supabase && supabase functions deploy gemini-proxy --project-ref sxcyygkxjysadsmyhijg
 
+// ==========================================
+// STATE GLOBAL & OPTIONS
+// ==========================================
+const state = { userId: null, type: null };
+let walletOptionsHTML = '<option value="">Pilih Dompet</option>';
+let categoryOptionsHTML = '<option value="">Pilih Kategori</option>';
+
 async function initTransactionForm() {
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) { window.location.href = 'login.html'; return; }
 
-  const isIncome = window.location.href.includes('income');
-  const transactionType = isIncome ? 'income' : 'expense';
+  state.userId = user.id;
+  state.type = window.location.href.includes('income') ? 'income' : 'expense';
 
   await loadWallets(user.id);
-  await loadCategories(user.id, transactionType);
-  
-  setupFormSubmit(user.id, transactionType);
+  await loadCategories(user.id, state.type);
+
+  setupAddItemButton();
+  addItemRow(); // baris pertama
+  setupFormSubmit();
+}
+
+// ==========================================
+// LOAD DOMPET & KATEGORI
+// ==========================================
+async function loadWallets(userId) {
+  const { data } = await supabaseClient.from('wallets').select('id, name').eq('user_id', userId);
+  walletOptionsHTML = '<option value="">Pilih Dompet</option>';
+  if (data) data.forEach(w => { walletOptionsHTML += `<option value="${w.id}">${w.name}</option>`; });
+}
+
+async function loadCategories(userId, type) {
+  const { data } = await supabaseClient.from('categories').select('id, name').eq('user_id', userId).eq('type', type);
+  categoryOptionsHTML = '<option value="">Pilih Kategori</option>';
+  if (data) data.forEach(c => { categoryOptionsHTML += `<option value="${c.id}">${c.name}</option>`; });
+}
+
+// ==========================================
+// MANAJEMEN BARIS MULTIPLE INPUT
+// ==========================================
+function addItemRow(data) {
+  const tpl = document.getElementById('item-template');
+  if (!tpl) return;
+  const clone = tpl.content.cloneNode(true);
+  const row = clone.querySelector('.item-row');
+
+  row.querySelector('.item-wallet').innerHTML = walletOptionsHTML;
+  row.querySelector('.item-category').innerHTML = categoryOptionsHTML;
+
+  if (data) {
+    if (data.amount) row.querySelector('.item-amount').value = data.amount;
+    if (data.title) row.querySelector('.item-title').value = data.title;
+    if (data.wallet) {
+      const sel = row.querySelector('.item-wallet');
+      const opt = Array.from(sel.options).find(o => o.text.toLowerCase().includes(String(data.wallet).toLowerCase()));
+      if (opt) sel.value = opt.value;
+    }
+    if (data.category) {
+      const sel = row.querySelector('.item-category');
+      const opt = Array.from(sel.options).find(o => o.text.toLowerCase().includes(String(data.category).toLowerCase()));
+      if (opt) sel.value = opt.value;
+    }
+  }
+
+  row.querySelector('.item-remove').addEventListener('click', () => { row.remove(); updateRemoveButtons(); });
+  document.getElementById('items-container').appendChild(clone);
+  updateRemoveButtons();
+}
+
+function updateRemoveButtons() {
+  const rows = document.querySelectorAll('#items-container .item-row');
+  const showRemove = rows.length > 1;
+  rows.forEach(r => { r.querySelector('.item-remove').style.display = showRemove ? 'flex' : 'none'; });
+}
+
+function setupAddItemButton() {
+  const btn = document.getElementById('add-item-btn');
+  if (btn) btn.addEventListener('click', () => addItemRow());
 }
 
 // ==========================================
@@ -84,32 +151,30 @@ function startRecording() {
   if (recognition) recognition.start();
 }
 
-// Proses teks ke Gemini dan Autofill Form
-// Proses teks ke Gemini dan Autofill Form
-// Proses teks ke Gemini dan Autofill Form
+// Proses teks ke Gemini dan Autofill Form (MULTIPLE TRANSACTIONS)
 async function processWithGemini(text) {
 
   const isIncomePage = window.location.href.includes('income');
   const typeHint = isIncomePage ? "Pemasukan" : "Pengeluaran";
 
-  const categorySelect = document.getElementById('category_id');
-  const availableCategories = Array.from(categorySelect.options)
-    .filter(opt => opt.value !== "")
-    .map(opt => opt.text)
-    .join(", ");
+  const availableCategories = (() => {
+    const div = document.createElement('div');
+    div.innerHTML = categoryOptionsHTML;
+    return Array.from(div.querySelectorAll('option')).filter(o => o.value !== '').map(o => o.text).join(', ');
+  })();
 
-  const walletSelect = document.getElementById('wallet_id');
-  const availableWallets = Array.from(walletSelect.options)
-    .filter(opt => opt.value !== "")
-    .map(opt => opt.text)
-    .join(", ");
+  const availableWallets = (() => {
+    const div = document.createElement('div');
+    div.innerHTML = walletOptionsHTML;
+    return Array.from(div.querySelectorAll('option')).filter(o => o.value !== '').map(o => o.text).join(', ');
+  })();
 
   // Dapatkan tanggal hari ini sebagai patokan untuk AI (Format: YYYY-MM-DD)
   const todayStr = new Date().toLocaleDateString('en-CA'); 
 
-  // PROMPT DINAMIS: Tambahkan instruksi untuk memproses waktu/tanggal
+  // PROMPT DINAMIS: Instruksi untuk memproses BANYAK transaksi sekaligus
   const promptText = `
-    Kamu adalah asisten keuangan pintar. Ekstrak informasi dari teks berikut ke dalam format JSON.
+    Kamu adalah asisten keuangan pintar. Ekstrak SEMUA transaksi dari teks berikut ke dalam format JSON array.
     Teks Pengguna: "${text}"
     
     Daftar Kategori yang tersedia: [${availableCategories}]
@@ -118,13 +183,18 @@ async function processWithGemini(text) {
     
     Wajib kembalikan JSON dengan struktur ini saja:
     {
-      "title": "Nama ${typeHint} singkat",
-      "amount": angka_nominal_murni,
-      "category": "Pilih SATU dari Daftar Kategori di atas. Jika tidak ada, biarkan kosong.",
-      "wallet": "Pilih SATU dari Daftar Dompet di atas. Jika tidak tahu, biarkan kosong.",
-      "date": "Tanggal transaksi dalam format YYYY-MM-DD. Hitung berdasarkan 'Tanggal Hari Ini' jika pengguna menyebutkan waktu (contoh: 'kemarin' = kurangi 1 hari, lalu kalau pengguna bilang 'tadi' itu artinya hari ini). Jika pengguna tidak menyebutkan waktu sama sekali, gunakan Tanggal Hari Ini."
+      "transactions": [
+        {
+          "title": "Nama ${typeHint} singkat",
+          "amount": angka_nominal_murni,
+          "category": "Pilih SATU dari Daftar Kategori di atas. Jika tidak ada, biarkan kosong.",
+          "wallet": "Pilih SATU dari Daftar Dompet di atas. Jika tidak tahu, biarkan kosong.",
+          "date": "Tanggal transaksi dalam format YYYY-MM-DD. Hitung berdasarkan 'Tanggal Hari Ini' jika pengguna menyebutkan waktu (contoh: 'kemarin' = kurangi 1 hari, 'tadi' = hari ini). Jika pengguna tidak menyebutkan waktu sama sekali, gunakan Tanggal Hari Ini."
+        }
+      ]
     }
-    Jika nominal tidak ditemukan, isi amount dengan 0.
+    Sertakan SEMUA transaksi yang disebutkan (jika ada beberapa, buat beberapa objek dalam array).
+    Jika nominal tidak ditemukan, isi amount dengan 0. Jika hanya satu transaksi, tetap gunakan array dengan satu elemen.
     JANGAN BERIKAN TEKS LAIN SELAIN JSON.
   `;
 
@@ -143,8 +213,10 @@ async function processWithGemini(text) {
     const jsonString = aiResponseText.replace(/```json/g, '').replace(/```/g, '').trim();
     const aiData = JSON.parse(jsonString);
 
-    // Langsung isi form
-    fillFormWithAI(aiData);
+    const transactions = Array.isArray(aiData.transactions) ? aiData.transactions : [aiData];
+
+    // Isi form dengan beberapa baris
+    fillFormWithAI(transactions);
     closeVoiceOverlay();
 
   } catch (error) {
@@ -156,108 +228,118 @@ async function processWithGemini(text) {
   }
 }
 
-// Fungsi untuk memasukkan data ke form dari hasil AI
-function fillFormWithAI(aiData) {
-  if (aiData.amount) {
-    const amountInput = document.getElementById('amount');
-    amountInput.value = aiData.amount;
-    formatRupiah(amountInput); 
-  }
-  
-  if (aiData.title) {
-    document.getElementById('title').value = aiData.title;
-  }
+// Fungsi untuk memasukkan data ke form dari hasil AI (MULTIPLE BARIS)
+function fillFormWithAI(transactions) {
+  const items = Array.isArray(transactions) ? transactions : [transactions];
+  const container = document.getElementById('items-container');
+  if (container) container.innerHTML = '';
 
-  // ISI TANGGAL SECARA OTOMATIS
-  if (aiData.date) {
-    document.getElementById('transaction_date').value = aiData.date;
-  }
+  let firstDate = null;
+  items.forEach((it, idx) => {
+    if (idx === 0 && it && it.date) firstDate = it.date;
+    addItemRow(it || {});
+  });
 
-  if (aiData.wallet) {
-    const walletSelect = document.getElementById('wallet_id');
-    const options = Array.from(walletSelect.options);
-    const matchedOption = options.find(opt => opt.text.toLowerCase().includes(aiData.wallet.toLowerCase()));
-    if (matchedOption) walletSelect.value = matchedOption.value;
-  }
-
-  if (aiData.category) {
-    const catSelect = document.getElementById('category_id');
-    const options = Array.from(catSelect.options);
-    const matchedOption = options.find(opt => opt.text.toLowerCase().includes(aiData.category.toLowerCase()));
-    if (matchedOption) catSelect.value = matchedOption.value;
+  if (firstDate) {
+    const dateInput = document.getElementById('transaction_date');
+    if (dateInput) dateInput.value = firstDate;
   }
 }
+
 // ==========================================
-// FUNGSI STANDAR TRANSAKSI & SUPABASE
+// SUBMIT MULTIPLE TRANSAKSI
 // ==========================================
-async function loadWallets(userId) {
-  const { data } = await supabaseClient.from('wallets').select('id, name').eq('user_id', userId);
-  const walletSelect = document.getElementById('wallet_id');
-  walletSelect.innerHTML = '<option value="">Pilih Dompet</option>'; 
-  if(data) data.forEach(w => walletSelect.innerHTML += `<option value="${w.id}">${w.name}</option>`);
-}
-
-async function loadCategories(userId, type) {
-  const { data } = await supabaseClient.from('categories').select('id, name').eq('user_id', userId).eq('type', type);
-  const categorySelect = document.getElementById('category_id');
-  categorySelect.innerHTML = '<option value="">Pilih Kategori</option>';
-  if(data) data.forEach(c => categorySelect.innerHTML += `<option value="${c.id}">${c.name}</option>`);
-}
-
-function setupFormSubmit(userId, transactionType) {
-  const formId = transactionType === 'income' ? 'income-form' : 'expense-form';
-  const form = document.getElementById(formId);
+function setupFormSubmit() {
+  const form = document.getElementById(state.type === 'income' ? 'income-form' : 'expense-form');
   if (!form) return;
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const title = document.getElementById('title').value;
-    const amountStr = document.getElementById('amount').value.replace(/\./g, '');
-    const amount = Number(amountStr);
-
-    if (!amount || amount <= 0) {
-      alert("Masukkan nominal yang valid!"); return;
-    }
     const transaction_date = document.getElementById('transaction_date').value;
-    const wallet_id = document.getElementById('wallet_id').value;
-    const category_id = document.getElementById('category_id').value;
     const description = document.getElementById('description').value;
 
-    const { data: walletData } = await supabaseClient.from('wallets').select('balance').eq('id', wallet_id).single();
-    let currentBalance = walletData ? Number(walletData.balance) || 0 : 0;
+    // Kumpulkan semua baris yang terisi
+    const rows = Array.from(document.querySelectorAll('#items-container .item-row'));
+    const items = [];
 
-    const executeTransaction = async () => {
+    for (const row of rows) {
+      const title = row.querySelector('.item-title').value.trim();
+      const amount = Number(row.querySelector('.item-amount').value.replace(/\./g, ''));
+      const wallet_id = row.querySelector('.item-wallet').value;
+      const category_id = row.querySelector('.item-category').value;
+
+      if (!title && !amount) continue; // lewati baris kosong
+
+      if (!title || !amount || amount <= 0) {
+        alert("Ada baris yang belum lengkap. Isi judul dan nominal yang valid.");
+        return;
+      }
+      if (!wallet_id || !category_id) {
+        alert("Pilih dompet dan kategori di setiap baris.");
+        return;
+      }
+
+      items.push({ title, amount, transaction_date, wallet_id, category_id, description });
+    }
+
+    if (!items.length) {
+      alert("Belum ada item yang diisi.");
+      return;
+    }
+
+    // Ambil saldo semua dompet yang terlibat
+    const walletIds = [...new Set(items.map(i => i.wallet_id))];
+    const { data: walletData } = await supabaseClient.from('wallets').select('id, balance').in('id', walletIds);
+    const balanceMap = {};
+    (walletData || []).forEach(w => { balanceMap[w.id] = Number(w.balance) || 0; });
+
+    const anyOver = items.some(i => state.type === 'expense' && i.amount > balanceMap[i.wallet_id]);
+
+    const executeBatch = async () => {
       const btn = form.querySelector('button[type="submit"]');
       const originalText = btn.innerHTML;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
       btn.disabled = true;
 
-      const { data: txData, error: txError } = await supabaseClient.from('transactions').insert([{
-        user_id: userId, title, amount, type: transactionType, transaction_date, wallet_id, category_id, description
-      }]).select();
+      const insertRows = items.map(i => ({
+        user_id: state.userId,
+        title: i.title,
+        amount: i.amount,
+        type: state.type,
+        transaction_date: i.transaction_date,
+        wallet_id: i.wallet_id,
+        category_id: i.category_id,
+        description: i.description
+      }));
 
+      const { data: txData, error: txError } = await supabaseClient.from('transactions').insert(insertRows).select();
       if (txError) {
         alert("Gagal menyimpan: " + txError.message);
         btn.innerHTML = originalText; btn.disabled = false; return;
       }
 
-      let newBalance = transactionType === 'income' ? currentBalance + amount : currentBalance - amount;
-      const { error: walletError } = await supabaseClient.from('wallets').update({ balance: newBalance }).eq('id', wallet_id);
+      // Hitung perubahan saldo per dompet
+      const delta = {};
+      items.forEach(i => { delta[i.wallet_id] = (delta[i.wallet_id] || 0) + (state.type === 'income' ? i.amount : -i.amount); });
 
-      if (walletError) {
-        await supabaseClient.from('transactions').delete().eq('id', txData[0].id);
-        alert("Koneksi bermasalah saat memproses saldo dompet! Transaksi dibatalkan otomatis agar data tetap sinkron. Silakan coba lagi.");
-        btn.innerHTML = originalText; btn.disabled = false; return;
+      // Update saldo tiap dompet
+      for (const [wid, d] of Object.entries(delta)) {
+        const { error: walletError } = await supabaseClient.from('wallets').update({ balance: balanceMap[wid] + d }).eq('id', wid);
+        if (walletError) {
+          await supabaseClient.from('transactions').delete().in('id', txData.map(t => t.id));
+          alert("Masalah saat memperbarui saldo dompet! Semua transaksi dibatalkan otomatis agar data tetap sinkron. Silakan coba lagi.");
+          btn.innerHTML = originalText; btn.disabled = false; return;
+        }
       }
 
       window.location.href = 'dashboard.html';
     };
 
-    if (transactionType === 'expense' && amount > currentBalance) {
-      showCustomConfirm(`Saldo dompet saat ini hanya Rp ${new Intl.NumberFormat('id-ID').format(currentBalance)}.<br>Yakin ingin mencatat pengeluaran ini dan membuat saldo menjadi minus (hutang)?`, executeTransaction);
+    if (anyOver) {
+      showCustomConfirm(`Ada pengeluaran yang melebihi saldo dompet.<br>Yakin ingin melanjutkan dan membuat saldo menjadi minus (hutang)?`, executeBatch);
     } else {
-      executeTransaction();
+      executeBatch();
     }
   });
 }
